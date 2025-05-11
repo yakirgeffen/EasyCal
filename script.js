@@ -78,8 +78,14 @@ class EasyCalApp {
     this.elements.eventTitle = $('eventTitle');
     this.elements.startDate = $('startDate');
     this.elements.startTime = $('startTime');
+    this.elements.startHour = $('startHour');
+    this.elements.startMinute = $('startMinute');
+    this.elements.startAmPm = $('startAmPm');
     this.elements.endDate = $('endDate');
     this.elements.endTime = $('endTime');
+    this.elements.endHour = $('endHour');
+    this.elements.endMinute = $('endMinute');
+    this.elements.endAmPm = $('endAmPm');
     this.elements.timezone = $('timezone');
     this.elements.location = $('location');
     this.elements.description = $('description');
@@ -140,9 +146,13 @@ class EasyCalApp {
     // Form input events
     this.elements.eventTitle.addEventListener('input', () => this.updatePreview());
     this.elements.startDate.addEventListener('change', () => this.updatePreview());
-    this.elements.startTime.addEventListener('change', () => this.updatePreview());
+    this.elements.startHour.addEventListener('change', () => this.updateTimeFromSelects('start'));
+    this.elements.startMinute.addEventListener('change', () => this.updateTimeFromSelects('start'));
+    this.elements.startAmPm.addEventListener('change', () => this.updateTimeFromSelects('start'));
     this.elements.endDate.addEventListener('change', () => this.updatePreview());
-    this.elements.endTime.addEventListener('change', () => this.updatePreview());
+    this.elements.endHour.addEventListener('change', () => this.updateTimeFromSelects('end'));
+    this.elements.endMinute.addEventListener('change', () => this.updateTimeFromSelects('end'));
+    this.elements.endAmPm.addEventListener('change', () => this.updateTimeFromSelects('end'));
     this.elements.timezone.addEventListener('change', () => this.updatePreview());
     this.elements.location.addEventListener('input', () => this.updatePreview());
     this.elements.organizer.addEventListener('input', () => this.updatePreview());
@@ -230,7 +240,7 @@ class EasyCalApp {
       this.elements.endDate.value = formattedDate;
     }
     
-    // Set default times (rounded to next 30 min for start, +1 hour for end)
+    // Set default times (rounded to next 15 min for start, +1 hour for end)
     if (this.elements.startTime && this.elements.endTime) {
       const roundedStartTime = this.getRoundedTime(today);
       const endTime = new Date(today);
@@ -239,6 +249,10 @@ class EasyCalApp {
       
       this.elements.startTime.value = this.formatTime(roundedStartTime);
       this.elements.endTime.value = this.formatTime(endTime);
+      
+      // Set the hour, minute, and AM/PM selects
+      this.updateTimeSelects('start', roundedStartTime);
+      this.updateTimeSelects('end', endTime);
     }
     
     // Set default timezone based on browser
@@ -370,6 +384,70 @@ class EasyCalApp {
       console.error('Error formatting date/time:', e);
       return '';
     }
+  }
+  
+  /**
+   * Update time selects based on 24-hour time value
+   */
+  updateTimeSelects(type, date) {
+    const hour = date.getHours();
+    const minute = date.getMinutes();
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const hour12 = hour % 12 || 12; // Convert 0 to 12
+    
+    // Round minute to nearest 15
+    const roundedMinute = Math.round(minute / 15) * 15;
+    const minuteStr = roundedMinute === 60 ? '00' : String(roundedMinute).padStart(2, '0');
+    
+    if (type === 'start') {
+      this.elements.startHour.value = hour12;
+      this.elements.startMinute.value = minuteStr;
+      this.elements.startAmPm.value = ampm;
+    } else {
+      this.elements.endHour.value = hour12;
+      this.elements.endMinute.value = minuteStr;
+      this.elements.endAmPm.value = ampm;
+    }
+  }
+  
+  /**
+   * Update hidden time input from hour, minute, and AM/PM selects
+   */
+  updateTimeFromSelects(type) {
+    if (type === 'start') {
+      const hour = parseInt(this.elements.startHour.value);
+      const minute = parseInt(this.elements.startMinute.value);
+      const ampm = this.elements.startAmPm.value;
+      
+      // Convert to 24-hour format
+      let hour24 = hour;
+      if (ampm === 'PM' && hour < 12) {
+        hour24 += 12;
+      } else if (ampm === 'AM' && hour === 12) {
+        hour24 = 0;
+      }
+      
+      // Update hidden input
+      this.elements.startTime.value = `${String(hour24).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+    } else {
+      const hour = parseInt(this.elements.endHour.value);
+      const minute = parseInt(this.elements.endMinute.value);
+      const ampm = this.elements.endAmPm.value;
+      
+      // Convert to 24-hour format
+      let hour24 = hour;
+      if (ampm === 'PM' && hour < 12) {
+        hour24 += 12;
+      } else if (ampm === 'AM' && hour === 12) {
+        hour24 = 0;
+      }
+      
+      // Update hidden input
+      this.elements.endTime.value = `${String(hour24).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+    }
+    
+    // Update preview
+    this.updatePreview();
   }
   
   /**
@@ -508,8 +586,12 @@ class FormManager {
     
     if (isAllDay) {
       // Disable time inputs
-      this.app.elements.startTime.disabled = true;
-      this.app.elements.endTime.disabled = true;
+      this.app.elements.startHour.disabled = true;
+      this.app.elements.startMinute.disabled = true;
+      this.app.elements.startAmPm.disabled = true;
+      this.app.elements.endHour.disabled = true;
+      this.app.elements.endMinute.disabled = true;
+      this.app.elements.endAmPm.disabled = true;
       
       // Store current times
       this.app.elements.startTime.dataset.prevValue = this.app.elements.startTime.value;
@@ -518,18 +600,30 @@ class FormManager {
       // Set times to full day
       this.app.elements.startTime.value = '00:00';
       this.app.elements.endTime.value = '23:59';
+      
+      // Update selects
+      this.app.updateTimeSelects('start', new Date(`2023-01-01T00:00:00`));
+      this.app.updateTimeSelects('end', new Date(`2023-01-01T23:59:00`));
     } else {
       // Re-enable time inputs
-      this.app.elements.startTime.disabled = false;
-      this.app.elements.endTime.disabled = false;
+      this.app.elements.startHour.disabled = false;
+      this.app.elements.startMinute.disabled = false;
+      this.app.elements.startAmPm.disabled = false;
+      this.app.elements.endHour.disabled = false;
+      this.app.elements.endMinute.disabled = false;
+      this.app.elements.endAmPm.disabled = false;
       
       // Restore previous times if available
       if (this.app.elements.startTime.dataset.prevValue) {
         this.app.elements.startTime.value = this.app.elements.startTime.dataset.prevValue;
+        const [hours, minutes] = this.app.elements.startTime.dataset.prevValue.split(':');
+        this.app.updateTimeSelects('start', new Date(`2023-01-01T${hours}:${minutes}:00`));
       }
       
       if (this.app.elements.endTime.dataset.prevValue) {
         this.app.elements.endTime.value = this.app.elements.endTime.dataset.prevValue;
+        const [hours, minutes] = this.app.elements.endTime.dataset.prevValue.split(':');
+        this.app.updateTimeSelects('end', new Date(`2023-01-01T${hours}:${minutes}:00`));
       }
     }
     
