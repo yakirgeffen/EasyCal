@@ -1,0 +1,17 @@
+{
+  "name": "easycal-ui-rebuild",
+  "version": "1.0.0",
+  "main": "index.js",
+"scripts": {
+  "dev": "npx tailwindcss -i ./src/input.css -o ./dist/output.css --watch"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.3",
+    "tailwindcss": "^4.1.5"
+  }
+}
