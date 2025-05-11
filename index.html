@@ -226,56 +226,34 @@
             <label class="text-sm text-gray-600 block mb-2">Start</label>
             <div class="flex items-center gap-2">
               <input type="date" id="startDate" class="border border-gray-300 rounded px-3 py-2 focus:ring-primary focus:border-primary text-sm" />
-              <select id="startTime" class="border border-gray-300 rounded px-3 py-2 focus:ring-primary focus:border-primary text-sm">
-                <option value="00:00">12:00 AM</option>
-                <option value="00:30">12:30 AM</option>
-                <option value="01:00">1:00 AM</option>
-                <option value="01:30">1:30 AM</option>
-                <option value="02:00">2:00 AM</option>
-                <option value="02:30">2:30 AM</option>
-                <option value="03:00">3:00 AM</option>
-                <option value="03:30">3:30 AM</option>
-                <option value="04:00">4:00 AM</option>
-                <option value="04:30">4:30 AM</option>
-                <option value="05:00">5:00 AM</option>
-                <option value="05:30">5:30 AM</option>
-                <option value="06:00">6:00 AM</option>
-                <option value="06:30">6:30 AM</option>
-                <option value="07:00">7:00 AM</option>
-                <option value="07:30">7:30 AM</option>
-                <option value="08:00">8:00 AM</option>
-                <option value="08:30">8:30 AM</option>
-                <option value="09:00">9:00 AM</option>
-                <option value="09:30">9:30 AM</option>
-                <option value="10:00">10:00 AM</option>
-                <option value="10:30">10:30 AM</option>
-                <option value="11:00">11:00 AM</option>
-                <option value="11:30">11:30 AM</option>
-                <option value="12:00">12:00 PM</option>
-                <option value="12:30">12:30 PM</option>
-                <option value="13:00">1:00 PM</option>
-                <option value="13:30">1:30 PM</option>
-                <option value="14:00">2:00 PM</option>
-                <option value="14:30">2:30 PM</option>
-                <option value="15:00">3:00 PM</option>
-                <option value="15:30">3:30 PM</option>
-                <option value="16:00">4:00 PM</option>
-                <option value="16:30">4:30 PM</option>
-                <option value="17:00">5:00 PM</option>
-                <option value="17:30">5:30 PM</option>
-                <option value="18:00">6:00 PM</option>
-                <option value="18:30">6:30 PM</option>
-                <option value="19:00">7:00 PM</option>
-                <option value="19:30">7:30 PM</option>
-                <option value="20:00">8:00 PM</option>
-                <option value="20:30">8:30 PM</option>
-                <option value="21:00">9:00 PM</option>
-                <option value="21:30">9:30 PM</option>
-                <option value="22:00">10:00 PM</option>
-                <option value="22:30">10:30 PM</option>
-                <option value="23:00">11:00 PM</option>
-                <option value="23:30">11:30 PM</option>
-              </select>
+              <div class="flex items-center gap-1">
+                <select id="startHour" class="border border-gray-300 rounded px-2 py-2 focus:ring-primary focus:border-primary text-sm w-16">
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                  <option value="6">6</option>
+                  <option value="7">7</option>
+                  <option value="8">8</option>
+                  <option value="9">9</option>
+                  <option value="10">10</option>
+                  <option value="11">11</option>
+                  <option value="12">12</option>
+                </select>
+                <span class="text-gray-500">:</span>
+                <select id="startMinute" class="border border-gray-300 rounded px-2 py-2 focus:ring-primary focus:border-primary text-sm w-16">
+                  <option value="00">00</option>
+                  <option value="15">15</option>
+                  <option value="30">30</option>
+                  <option value="45">45</option>
+                </select>
+                <select id="startAmPm" class="border border-gray-300 rounded px-2 py-2 focus:ring-primary focus:border-primary text-sm w-16">
+                  <option value="AM">AM</option>
+                  <option value="PM">PM</option>
+                </select>
+                <input type="hidden" id="startTime" value="09:00">
+              </div>
             </div>
           </div>
           
@@ -284,56 +262,34 @@
             <label class="text-sm text-gray-600 block mb-2">End</label>
             <div class="flex items-center gap-2">
               <input type="date" id="endDate" class="border border-gray-300 rounded px-3 py-2 focus:ring-primary focus:border-primary text-sm" />
-              <select id="endTime" class="border border-gray-300 rounded px-3 py-2 focus:ring-primary focus:border-primary text-sm">
-                <option value="00:00">12:00 AM</option>
-                <option value="00:30">12:30 AM</option>
-                <option value="01:00">1:00 AM</option>
-                <option value="01:30">1:30 AM</option>
-                <option value="02:00">2:00 AM</option>
-                <option value="02:30">2:30 AM</option>
-                <option value="03:00">3:00 AM</option>
-                <option value="03:30">3:30 AM</option>
-                <option value="04:00">4:00 AM</option>
-                <option value="04:30">4:30 AM</option>
-                <option value="05:00">5:00 AM</option>
-                <option value="05:30">5:30 AM</option>
-                <option value="06:00">6:00 AM</option>
-                <option value="06:30">6:30 AM</option>
-                <option value="07:00">7:00 AM</option>
-                <option value="07:30">7:30 AM</option>
-                <option value="08:00">8:00 AM</option>
-                <option value="08:30">8:30 AM</option>
-                <option value="09:00">9:00 AM</option>
-                <option value="09:30">9:30 AM</option>
-                <option value="10:00">10:00 AM</option>
-                <option value="10:30">10:30 AM</option>
-                <option value="11:00">11:00 AM</option>
-                <option value="11:30">11:30 AM</option>
-                <option value="12:00">12:00 PM</option>
-                <option value="12:30">12:30 PM</option>
-                <option value="13:00">1:00 PM</option>
-                <option value="13:30">1:30 PM</option>
-                <option value="14:00">2:00 PM</option>
-                <option value="14:30">2:30 PM</option>
-                <option value="15:00">3:00 PM</option>
-                <option value="15:30">3:30 PM</option>
-                <option value="16:00">4:00 PM</option>
-                <option value="16:30">4:30 PM</option>
-                <option value="17:00">5:00 PM</option>
-                <option value="17:30">5:30 PM</option>
-                <option value="18:00">6:00 PM</option>
-                <option value="18:30">6:30 PM</option>
-                <option value="19:00">7:00 PM</option>
-                <option value="19:30">7:30 PM</option>
-                <option value="20:00">8:00 PM</option>
-                <option value="20:30">8:30 PM</option>
-                <option value="21:00">9:00 PM</option>
-                <option value="21:30">9:30 PM</option>
-                <option value="22:00">10:00 PM</option>
-                <option value="22:30">10:30 PM</option>
-                <option value="23:00">11:00 PM</option>
-                <option value="23:30">11:30 PM</option>
-              </select>
+              <div class="flex items-center gap-1">
+                <select id="endHour" class="border border-gray-300 rounded px-2 py-2 focus:ring-primary focus:border-primary text-sm w-16">
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                  <option value="6">6</option>
+                  <option value="7">7</option>
+                  <option value="8">8</option>
+                  <option value="9">9</option>
+                  <option value="10">10</option>
+                  <option value="11">11</option>
+                  <option value="12">12</option>
+                </select>
+                <span class="text-gray-500">:</span>
+                <select id="endMinute" class="border border-gray-300 rounded px-2 py-2 focus:ring-primary focus:border-primary text-sm w-16">
+                  <option value="00">00</option>
+                  <option value="15">15</option>
+                  <option value="30">30</option>
+                  <option value="45">45</option>
+                </select>
+                <select id="endAmPm" class="border border-gray-300 rounded px-2 py-2 focus:ring-primary focus:border-primary text-sm w-16">
+                  <option value="AM">AM</option>
+                  <option value="PM">PM</option>
+                </select>
+                <input type="hidden" id="endTime" value="10:00">
+              </div>
             </div>
           </div>
         </div>
@@ -452,8 +408,8 @@
         <button id="createButton" class="bg-primary hover:bg-primary-hover text-white font-semibold px-8 py-2.5 rounded-lg transition-all">
           Create
         </button>
-        <button id="cancelButton" class="border border-gray-300 text-gray-700 hover:bg-gray-50 font-semibold px-8 py-2.5 rounded-lg transition-all">
-          Cancel
+        <button id="resetButton" class="border border-gray-300 text-gray-700 hover:bg-gray-50 font-semibold px-8 py-2.5 rounded-lg transition-all">
+          Reset
         </button>
       </div>
     </div>

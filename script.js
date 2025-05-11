@@ -126,7 +126,7 @@ class EasyCalApp {
     this.elements.copyButton = $('copyButton');
     this.elements.mainCopyButton = $('mainCopyButton');
     this.elements.createButton = $('createButton');
-    this.elements.cancelButton = $('cancelButton');
+    this.elements.resetButton = $('resetButton');
     this.elements.saveButton = $('saveButton');
     this.elements.shareButton = $('shareButton');
     this.elements.shareDropdown = $('shareDropdown');
@@ -182,7 +182,7 @@ class EasyCalApp {
     this.elements.copyButton.addEventListener('click', () => this.copyManager.copyCode());
     this.elements.mainCopyButton.addEventListener('click', () => this.copyManager.copyCode());
     this.elements.createButton.addEventListener('click', () => this.formManager.handleCreate());
-    this.elements.cancelButton.addEventListener('click', () => this.formManager.handleCancel());
+    this.elements.resetButton.addEventListener('click', () => this.formManager.handleReset());
     this.elements.saveButton.addEventListener('click', () => this.formManager.handleSave());
     this.elements.shareButton.addEventListener('click', () => this.uiManager.toggleShareDropdown());
     
@@ -644,9 +644,9 @@ class FormManager {
   }
   
   /**
-   * Handle cancel button click
+   * Handle reset button click
    */
-  handleCancel() {
+  handleReset() {
     // Reset form to default values
     this.resetForm();
   }
