@@ -6,7 +6,7 @@
   <title>EasyCal – Create calendar buttons in seconds</title>
 
   <!-- Built Tailwind CSS -->
-  <link href="./dist/output.css" rel="stylesheet">
+  <link href="/dist/output.css" rel="stylesheet">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -649,129 +649,7 @@
     </div>
   </footer>
 
-  <!-- JavaScript -->
-  <script>
-    /* EasyCal – Enhanced with Bug Fixes */
-    document.addEventListener('DOMContentLoaded', () => {
-
-      /* shorthand with error handling */
-      const $ = id => {
-        const element = document.getElementById(id);
-        if (!element) {
-          console.warn(`Element with id "${id}" not found`);
-        }
-        return element;
-      };
-
-      /* Original form refs */
-      const eventTitle = $('eventTitle');
-      const startDate = $('startDate');
-      const startTime = $('startTime');
-      const endDate = $('endDate');
-      const endTime = $('endTime');
-      const timezone = $('timezone');
-      const locationInp = $('location');
-      const desc = $('description');
-      const organizer = $('organizer');
-      const organizerEmail = $('organizerEmail');
-      
-      const previewTitle = $('previewTitle');
-      const previewDateTime = $('previewDateTime');
-      const previewTimezone = $('previewTimezone');
-      const previewLocation = $('previewLocation');
-      const previewOrganizer = $('previewOrganizer');
-      const previewDescription = $('previewDescription');
-      
-      const snippetCode = $('snippetCode');
-      const createButton = $('createButton');
-      const cancelButton = $('cancelButton');
-      const toast = $('copySuccess');
-
-      /* === Utility Functions === */
-      function debounce(func, wait) {
-        let timeout;
-        return function(...args) {
-          clearTimeout(timeout);
-          timeout = setTimeout(() => func.apply(this, args), wait);
-        };
-      }
-
-      function validateEmail(email) {
-        const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return re.test(email);
-      }
-
-      function validateDateTime(date, time) {
-        if (!date) return false;
-        if (time && !/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(time)) return false;
-        const testDate = new Date(date + 'T' + (time || '00:00'));
-        return !isNaN(testDate.getTime());
-      }
-
-      /* === Timezone Helper Functions === */
-      function convertToUTC(localDate, localTime, timezoneString) {
-        try {
-          // Create a date string in ISO format with timezone
-          const dateTimeString = `${localDate}T${localTime || '00:00'}`;
-          
-          // Use Intl API to get the timezone offset
-          const localDateTime = new Date(dateTimeString);
-          const formatter = new Intl.DateTimeFormat('en', {
-            timeZone: timezoneString,
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-            hour12: false
-          });
-          
-          const parts = formatter.formatToParts(localDateTime);
-          const utcString = `${parts.find(p => p.type === 'year').value}-${parts.find(p => p.type === 'month').value}-${parts.find(p => p.type === 'day').value}T${parts.find(p => p.type === 'hour').value}:${parts.find(p => p.type === 'minute').value}:${parts.find(p => p.type === 'second').value}Z`;
-          
-          return new Date(utcString);
-        } catch (error) {
-          console.error('Timezone conversion error:', error);
-          // Fallback to simple date parsing
-          return new Date(`${localDate}T${localTime || '00:00'}`);
-        }
-      }
-
-      /* Include all the JavaScript from the previous artifacts here */
-      // [Previous JavaScript code would go here - truncated for space]
-      
-      // For now, let's add a simple initialization
-      function init() {
-        console.log('EasyCal initialized');
-        autoFillDemoData();
-      }
-      
-      function autoFillDemoData() {
-        if (eventTitle) eventTitle.value = 'Product launch webinar';
-        if (startDate) startDate.value = '2025-05-10';
-        if (startTime) startTime.value = '09:00';
-        if (endDate) endDate.value = '2025-05-10';
-        if (endTime) endTime.value = '10:00';
-        if (timezone) timezone.value = 'Asia/Istanbul';
-        if (locationInp) locationInp.value = '123 Demo Street, Springfield';
-        if (organizer) organizer.value = 'John Doe';
-        if (organizerEmail) organizerEmail.value = 'john@example.com';
-        
-        const editor = $('smartEditor');
-        if (editor) {
-          editor.innerHTML = 'Join us for an exciting product launch webinar where we\'ll showcase our latest innovations.';
-        }
-      }
-      
-      // Initialize everything
-      try {
-        init();
-      } catch (error) {
-        console.error('Initialization error:', error);
-      }
-      
-    });
-  </script>
+  <!-- Main JavaScript -->
+  <script src="./script.js"></script>
 </body>
 </html>

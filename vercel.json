@@ -10,5 +10,10 @@
         { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
       ]
     }
-  ]
+  ],
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/$1" }
+  ],
+  "trailingSlash": false,
+  "cleanUrls": true
 }
