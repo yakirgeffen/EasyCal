@@ -1,1169 +1,1396 @@
-/* EasyCal – Enhanced with Marketing Features */
+/**
+ * EasyCal - Calendar Button Generator
+ * A tool to create "Add to Calendar" buttons for events
+ */
+
 document.addEventListener('DOMContentLoaded', () => {
+  // Initialize the application
+  const app = new EasyCalApp();
+  app.init();
+});
 
-  /* shorthand */
-  const $ = id => document.getElementById(id);
-
-  /* Original form refs */
-  const eventTitle = $('eventTitle');
-  const startDate = $('startDate');
-  const startTime = $('startTime');
-  const endDate = $('endDate');
-  const endTime = $('endTime');
-  const timezone = $('timezone');
-  const locationInp = $('location');
-  const desc = $('description');
-  const organizer = $('organizer');
-  const organizerEmail = $('organizerEmail');
-  
-  const previewTitle = $('previewTitle');
-  const previewDateTime = $('previewDateTime');
-  const previewTimezone = $('previewTimezone');
-  const previewLocation = $('previewLocation');
-  const previewOrganizer = $('previewOrganizer');
-  const previewDescription = $('previewDescription');
-  
-  const snippetCode = $('snippetCode');
-  const createButton = $('createButton');
-  const cancelButton = $('cancelButton');
-  const toast = $('copySuccess');
-
-  /* === Smart Description Editor === */
-  class SmartDescriptionEditor {
-    constructor() {
-      this.editor = $('smartEditor');
-      this.textarea = $('description');
-      this.toolbar = $('smartToolbar');
-      this.platformIndicator = $('currentPlatform');
-      this.helpText = $('platformHelpText');
-      
-      this.selectedPlatforms = new Set();
-      this.init();
-    }
+/**
+ * Main application class
+ */
+class EasyCalApp {
+  constructor() {
+    // DOM element references
+    this.elements = {};
     
-    init() {
-      // Listen for platform changes from the calendar checkboxes
-      document.querySelectorAll('[id^="plt"]').forEach(checkbox => {
-        checkbox.addEventListener('change', () => {
-          this.updatePlatformSettings();
+    // Application state
+    this.state = {
+      buttonStyle: 'dark',
+      outputFormat: 'button',
+      buttonColor: '#333333',
+      platforms: {
+        apple: true,
+        google: true,
+        outlook: true,
+        outlookCom: true,
+        office365: true,
+        yahoo: true
+      },
+      showTimezone: false
+    };
+    
+    // Initialize managers
+    this.formManager = new FormManager(this);
+    this.previewManager = new PreviewManager(this);
+    this.codeGenerator = new CodeGenerator(this);
+    this.copyManager = new CopyManager(this);
+    this.editorManager = new EditorManager(this);
+    this.uiManager = new UIManager(this);
+  }
+  
+  /**
+   * Initialize the application
+   */
+  init() {
+    this.cacheElements();
+    this.bindEvents();
+    this.initializeValues();
+    
+    // Initialize managers
+    this.formManager.init();
+    this.previewManager.init();
+    this.codeGenerator.init();
+    this.copyManager.init();
+    this.editorManager.init();
+    this.uiManager.init();
+    
+    console.log('EasyCal initialized successfully');
+  }
+  
+  /**
+   * Cache DOM elements for better performance
+   */
+  cacheElements() {
+    // Helper function to get elements by ID
+    const $ = (id) => {
+      const element = document.getElementById(id);
+      if (!element) {
+        console.warn(`Element with id "${id}" not found`);
+      }
+      return element;
+    };
+    
+    // Form elements
+    this.elements.eventTitle = $('eventTitle');
+    this.elements.startDate = $('startDate');
+    this.elements.startTime = $('startTime');
+    this.elements.endDate = $('endDate');
+    this.elements.endTime = $('endTime');
+    this.elements.timezone = $('timezone');
+    this.elements.location = $('location');
+    this.elements.description = $('description');
+    this.elements.smartEditor = $('smartEditor');
+    this.elements.organizer = $('organizer');
+    this.elements.organizerEmail = $('organizerEmail');
+    this.elements.allDay = $('allDay');
+    this.elements.recurring = $('recurring');
+    this.elements.rsvp = $('rsvp');
+    
+    // Preview elements
+    this.elements.previewTitle = $('previewTitle');
+    this.elements.previewDateTime = $('previewDateTime');
+    this.elements.previewTimezone = $('previewTimezone');
+    this.elements.previewLocation = $('previewLocation');
+    this.elements.previewOrganizer = $('previewOrganizer');
+    this.elements.previewDescription = $('previewDescription');
+    
+    // Button elements
+    this.elements.buttonFormat = $('buttonFormat');
+    this.elements.linksFormat = $('linksFormat');
+    this.elements.buttonPreview = $('buttonPreview');
+    this.elements.linksPreview = $('linksPreview');
+    this.elements.style1 = $('style1');
+    this.elements.style2 = $('style2');
+    this.elements.colorPicker = $('colorPicker');
+    this.elements.colorPickerPanel = $('colorPickerPanel');
+    
+    // Platform checkboxes
+    this.elements.pltApple = $('pltApple');
+    this.elements.pltGoogle = $('pltGoogle');
+    this.elements.pltOutlook = $('pltOutlook');
+    this.elements.pltOutlookCom = $('pltOutlookCom');
+    this.elements.pltOffice365 = $('pltOffice365');
+    this.elements.pltYahoo = $('pltYahoo');
+    
+    // Action buttons
+    this.elements.copyButton = $('copyButton');
+    this.elements.mainCopyButton = $('mainCopyButton');
+    this.elements.createButton = $('createButton');
+    this.elements.cancelButton = $('cancelButton');
+    this.elements.saveButton = $('saveButton');
+    this.elements.shareButton = $('shareButton');
+    this.elements.shareDropdown = $('shareDropdown');
+    
+    // Other elements
+    this.elements.snippetCode = $('snippetCode');
+    this.elements.copySuccess = $('copySuccess');
+    this.elements.showTimezone = $('showTimezone');
+    this.elements.timezoneSection = $('timezoneSection');
+    this.elements.smartToolbar = $('smartToolbar');
+  }
+  
+  /**
+   * Bind event listeners
+   */
+  bindEvents() {
+    // Form input events
+    this.elements.eventTitle.addEventListener('input', () => this.updatePreview());
+    this.elements.startDate.addEventListener('change', () => this.updatePreview());
+    this.elements.startTime.addEventListener('change', () => this.updatePreview());
+    this.elements.endDate.addEventListener('change', () => this.updatePreview());
+    this.elements.endTime.addEventListener('change', () => this.updatePreview());
+    this.elements.timezone.addEventListener('change', () => this.updatePreview());
+    this.elements.location.addEventListener('input', () => this.updatePreview());
+    this.elements.organizer.addEventListener('input', () => this.updatePreview());
+    this.elements.organizerEmail.addEventListener('input', () => this.updatePreview());
+    this.elements.allDay.addEventListener('change', () => this.formManager.handleAllDayToggle());
+    this.elements.recurring.addEventListener('change', () => this.updatePreview());
+    this.elements.rsvp.addEventListener('change', () => this.updatePreview());
+    
+    // Button format toggle
+    this.elements.buttonFormat.addEventListener('click', () => this.uiManager.setOutputFormat('button'));
+    this.elements.linksFormat.addEventListener('click', () => this.uiManager.setOutputFormat('links'));
+    
+    // Button style toggle
+    this.elements.style1.addEventListener('click', () => this.uiManager.setButtonStyle('dark'));
+    this.elements.style2.addEventListener('click', () => this.uiManager.setButtonStyle('light'));
+    this.elements.colorPicker.addEventListener('click', () => this.uiManager.toggleColorPicker());
+    
+    // Platform checkboxes
+    this.elements.pltApple.addEventListener('change', () => this.updatePlatformState('apple'));
+    this.elements.pltGoogle.addEventListener('change', () => this.updatePlatformState('google'));
+    this.elements.pltOutlook.addEventListener('change', () => this.updatePlatformState('outlook'));
+    this.elements.pltOutlookCom.addEventListener('change', () => this.updatePlatformState('outlookCom'));
+    this.elements.pltOffice365.addEventListener('change', () => this.updatePlatformState('office365'));
+    this.elements.pltYahoo.addEventListener('change', () => this.updatePlatformState('yahoo'));
+    
+    // Action buttons
+    this.elements.copyButton.addEventListener('click', () => this.copyManager.copyCode());
+    this.elements.mainCopyButton.addEventListener('click', () => this.copyManager.copyCode());
+    this.elements.createButton.addEventListener('click', () => this.formManager.handleCreate());
+    this.elements.cancelButton.addEventListener('click', () => this.formManager.handleCancel());
+    this.elements.saveButton.addEventListener('click', () => this.formManager.handleSave());
+    this.elements.shareButton.addEventListener('click', () => this.uiManager.toggleShareDropdown());
+    
+    // Timezone toggle
+    this.elements.showTimezone.addEventListener('click', () => this.uiManager.toggleTimezoneSection());
+    
+    // Color picker panel
+    if (this.elements.colorPickerPanel) {
+      const colorButtons = this.elements.colorPickerPanel.querySelectorAll('button');
+      colorButtons.forEach(button => {
+        button.addEventListener('click', (e) => {
+          const color = e.currentTarget.dataset.color;
+          if (color === 'custom') {
+            this.uiManager.showCustomColorPicker();
+          } else {
+            this.uiManager.setButtonColor(color);
+          }
         });
       });
+    }
+    
+    // Document click handler for closing dropdowns
+    document.addEventListener('click', (e) => {
+      // Close share dropdown when clicking outside
+      if (this.elements.shareDropdown && 
+          this.elements.shareDropdown.classList.contains('block') && 
+          !this.elements.shareButton.contains(e.target) && 
+          !this.elements.shareDropdown.contains(e.target)) {
+        this.uiManager.toggleShareDropdown(false);
+      }
       
-      // Setup toolbar events
-      this.toolbar.addEventListener('click', (e) => {
-        const formatBtn = e.target.closest('[data-format]');
-        if (formatBtn) {
-          e.preventDefault();
-          this.applyFormat(formatBtn.dataset.format);
+      // Close color picker when clicking outside
+      if (this.elements.colorPickerPanel && 
+          !this.elements.colorPickerPanel.classList.contains('hidden') && 
+          !this.elements.colorPicker.contains(e.target) && 
+          !this.elements.colorPickerPanel.contains(e.target)) {
+        this.uiManager.toggleColorPicker(false);
+      }
+    });
+  }
+  
+  /**
+   * Initialize form values with defaults
+   */
+  initializeValues() {
+    // Set default dates to today
+    const today = new Date();
+    const formattedDate = this.formatDate(today);
+    
+    if (this.elements.startDate) {
+      this.elements.startDate.value = formattedDate;
+    }
+    
+    if (this.elements.endDate) {
+      this.elements.endDate.value = formattedDate;
+    }
+    
+    // Set default times (rounded to next 30 min for start, +1 hour for end)
+    if (this.elements.startTime && this.elements.endTime) {
+      const roundedStartTime = this.getRoundedTime(today);
+      const endTime = new Date(today);
+      endTime.setHours(endTime.getHours() + 1);
+      endTime.setMinutes(roundedStartTime.getMinutes());
+      
+      this.elements.startTime.value = this.formatTime(roundedStartTime);
+      this.elements.endTime.value = this.formatTime(endTime);
+    }
+    
+    // Set default timezone based on browser
+    if (this.elements.timezone) {
+      try {
+        const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        if (timeZone && this.elements.timezone.querySelector(`option[value="${timeZone}"]`)) {
+          this.elements.timezone.value = timeZone;
         }
-      });
-      
-      // Update content on input
-      this.editor.addEventListener('input', () => {
-        this.syncContent();
-        updatePreview();
-      });
-      
-      // Auto-detect user's preferred platform
-      this.updatePlatformSettings();
-    }
-    
-    updatePlatformSettings() {
-      this.selectedPlatforms.clear();
-      
-      // Get selected platforms
-      if ($('pltGoogle')?.checked) this.selectedPlatforms.add('google');
-      if ($('pltOutlook')?.checked) this.selectedPlatforms.add('outlook');
-      if ($('pltYahoo')?.checked) this.selectedPlatforms.add('yahoo');
-      if ($('pltApple')?.checked) this.selectedPlatforms.add('apple');
-      if ($('pltOutlookCom')?.checked) this.selectedPlatforms.add('outlookcom');
-      if ($('pltOffice365')?.checked) this.selectedPlatforms.add('office365');
-      
-      // Determine formatting strategy
-      const strategy = this.getFormattingStrategy();
-      this.updateUI(strategy);
-    }
-    
-    getFormattingStrategy() {
-      if (this.selectedPlatforms.size === 0) {
-        return 'universal';
-      }
-      
-      // If only Google is selected, enable rich formatting
-      if (this.selectedPlatforms.size === 1 && this.selectedPlatforms.has('google')) {
-        return 'rich';
-      }
-      
-      // If multiple platforms or includes Apple/ICS, use simple formatting
-      if (this.selectedPlatforms.has('apple') || this.selectedPlatforms.size > 2) {
-        return 'simple';
-      }
-      
-      // Default to universal (most compatible)
-      return 'universal';
-    }
-    
-    updateUI(strategy) {
-      switch(strategy) {
-        case 'rich':
-          this.platformIndicator.textContent = 'Google Calendar';
-          this.helpText.textContent = 'Full formatting support enabled';
-          this.enableAllFormatting();
-          break;
-          
-        case 'simple':
-          this.platformIndicator.textContent = 'multiple platforms';
-          this.helpText.textContent = 'Basic formatting (bold, italic, links, lists)';
-          this.enableSimpleFormatting();
-          break;
-          
-        case 'universal':
-          this.platformIndicator.textContent = 'all platforms';
-          this.helpText.textContent = 'Universal plain text - works everywhere';
-          this.disableFormatting();
-          break;
+      } catch (e) {
+        console.warn('Could not detect timezone:', e);
       }
     }
     
-    enableAllFormatting() {
-      this.toolbar.querySelectorAll('button').forEach(btn => {
-        btn.classList.remove('formatting-disabled');
-      });
+    // Initialize demo data for better user experience
+    this.setDemoData();
+    
+    // Update preview with initial values
+    this.updatePreview();
+  }
+  
+  /**
+   * Set demo data for the form
+   */
+  setDemoData() {
+    if (this.elements.eventTitle) {
+      this.elements.eventTitle.value = 'Product launch webinar';
     }
     
-    enableSimpleFormatting() {
-      this.toolbar.querySelectorAll('button').forEach(btn => {
-        const format = btn.dataset.format;
-        if (['bold', 'italic', 'bulletList', 'link'].includes(format)) {
-          btn.classList.remove('formatting-disabled');
-        } else {
-          btn.classList.add('formatting-disabled');
-        }
-      });
+    if (this.elements.location) {
+      this.elements.location.value = '123 Demo Street, Springfield';
     }
     
-    disableFormatting() {
-      this.toolbar.querySelectorAll('button').forEach(btn => {
-        btn.classList.add('formatting-disabled');
-      });
-    }
-    
-    applyFormat(format) {
-      if (this.isFormatDisabled(format)) return;
-      
-      this.editor.focus();
-      
-      switch(format) {
-        case 'bold':
-          document.execCommand('bold', false, null);
-          break;
-        case 'italic':
-          document.execCommand('italic', false, null);
-          break;
-        case 'underline':
-          if (this.getFormattingStrategy() === 'rich') {
-            document.execCommand('underline', false, null);
-          }
-          break;
-        case 'bulletList':
-          this.insertBulletList();
-          break;
-        case 'link':
-          this.insertLink();
-          break;
-      }
-      
-      this.syncContent();
-    }
-    
-    isFormatDisabled(format) {
-      const strategy = this.getFormattingStrategy();
-      
-      if (strategy === 'universal') return true;
-      if (strategy === 'simple' && format === 'underline') return true;
-      
-      return false;
-    }
-    
-    insertBulletList() {
-      const selection = window.getSelection();
-      if (!selection.rangeCount) return;
-      
-      const range = selection.getRangeAt(0);
-      
-      // Simple bullet list implementation
-      const text = '• ';
-      const textNode = document.createTextNode(text);
-      range.insertNode(textNode);
-      range.setStartAfter(textNode);
-      range.collapse(true);
-      selection.removeAllRanges();
-      selection.addRange(range);
-    }
-    
-    insertLink() {
-      const selectedText = window.getSelection().toString();
-      const url = prompt('Enter URL:', 'https://');
-      
-      if (url && url !== 'https://') {
-        const linkText = selectedText || url;
-        if (this.getFormattingStrategy() === 'rich') {
-          document.execCommand('createLink', false, url);
-        } else {
-          // Insert as plain text link for better compatibility
-          document.execCommand('insertText', false, `${linkText} (${url})`);
-        }
+    if (this.elements.smartEditor) {
+      this.elements.smartEditor.innerHTML = 'Join us for an exciting product launch webinar where we\'ll showcase our latest innovations.';
+      if (this.elements.description) {
+        this.elements.description.value = this.elements.smartEditor.innerHTML;
       }
     }
     
-    syncContent() {
-      const strategy = this.getFormattingStrategy();
-      
-      // Get content based on formatting strategy
-      if (strategy === 'universal') {
-        this.textarea.value = this.editor.innerText;
-      } else {
-        this.textarea.value = this.getCompatibleText();
-      }
+    if (this.elements.organizer) {
+      this.elements.organizer.value = 'John Doe';
     }
     
-    getCompatibleText() {
-      // Convert HTML to a format that works across platforms
-      let text = this.editor.innerHTML;
-      
-      // Handle bold
-      text = text.replace(/<strong>(.*?)<\/strong>/gi, (match, content) => {
-        if (this.selectedPlatforms.has('google')) return content;
-        return content.toUpperCase();
-      });
-      
-      text = text.replace(/<b>(.*?)<\/b>/gi, (match, content) => {
-        if (this.selectedPlatforms.has('google')) return content;
-        return content.toUpperCase();
-      });
-      
-      // Handle italic
-      text = text.replace(/<em>(.*?)<\/em>/gi, (match, content) => {
-        if (this.selectedPlatforms.has('google')) return content;
-        return `*${content}*`;
-      });
-      
-      text = text.replace(/<i>(.*?)<\/i>/gi, (match, content) => {
-        if (this.selectedPlatforms.has('google')) return content;
-        return `*${content}*`;
-      });
-      
-      // Handle links
-      text = text.replace(/<a href="(.*?)">(.*?)<\/a>/gi, (match, url, text) => {
-        return `${text} (${url})`;
-      });
-      
-      // Clean up HTML
-      text = text.replace(/<br\s*\/?>/gi, '\n');
-      text = text.replace(/<[^>]*>/g, '');
-      text = text.replace(/&nbsp;/g, ' ');
-      
-      return text;
+    if (this.elements.organizerEmail) {
+      this.elements.organizerEmail.value = 'john@example.com';
     }
   }
+  
+  /**
+   * Update the preview with current form values
+   */
+  updatePreview() {
+    this.previewManager.updatePreview();
+    this.codeGenerator.updateCode();
+  }
+  
+  /**
+   * Update platform state when checkboxes change
+   */
+  updatePlatformState(platform) {
+    const checkbox = this.elements[`plt${platform.charAt(0).toUpperCase() + platform.slice(1)}`];
+    if (checkbox) {
+      this.state.platforms[platform] = checkbox.checked;
+      this.updatePreview();
+    }
+  }
+  
+  /**
+   * Format a date object to YYYY-MM-DD for input fields
+   */
+  formatDate(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+  
+  /**
+   * Format a time object to HH:MM for input fields
+   */
+  formatTime(date) {
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
+  }
+  
+  /**
+   * Round time to nearest 30 minutes
+   */
+  getRoundedTime(date) {
+    const roundedDate = new Date(date);
+    const minutes = date.getMinutes();
+    const remainder = minutes % 30;
+    
+    if (remainder === 0) {
+      // Already at a 30-minute mark, add 30 minutes
+      roundedDate.setMinutes(minutes + 30);
+    } else {
+      // Round up to next 30-minute mark
+      roundedDate.setMinutes(minutes + (30 - remainder));
+    }
+    
+    // Reset seconds and milliseconds
+    roundedDate.setSeconds(0);
+    roundedDate.setMilliseconds(0);
+    
+    return roundedDate;
+  }
+  
+  /**
+   * Format a date and time for display
+   */
+  formatDateTimeForDisplay(dateStr, timeStr) {
+    if (!dateStr || !timeStr) return '';
+    
+    try {
+      const date = new Date(`${dateStr}T${timeStr}`);
+      
+      // Format the time in 12-hour format
+      let hours = date.getHours();
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12;
+      hours = hours ? hours : 12; // Convert 0 to 12
+      
+      return `${hours}:${minutes} ${ampm}`;
+    } catch (e) {
+      console.error('Error formatting date/time:', e);
+      return '';
+    }
+  }
+  
+  /**
+   * Get event data from form
+   */
+  getEventData() {
+    return {
+      title: this.elements.eventTitle ? this.elements.eventTitle.value : '',
+      startDate: this.elements.startDate ? this.elements.startDate.value : '',
+      startTime: this.elements.startTime ? this.elements.startTime.value : '',
+      endDate: this.elements.endDate ? this.elements.endDate.value : '',
+      endTime: this.elements.endTime ? this.elements.endTime.value : '',
+      timezone: this.elements.timezone ? this.elements.timezone.value : '',
+      location: this.elements.location ? this.elements.location.value : '',
+      description: this.elements.description ? this.elements.description.value : 
+                  (this.elements.smartEditor ? this.elements.smartEditor.innerHTML : ''),
+      organizer: this.elements.organizer ? this.elements.organizer.value : '',
+      organizerEmail: this.elements.organizerEmail ? this.elements.organizerEmail.value : '',
+      allDay: this.elements.allDay ? this.elements.allDay.checked : false,
+      recurring: this.elements.recurring ? this.elements.recurring.checked : false,
+      rsvp: this.elements.rsvp ? this.elements.rsvp.checked : false
+    };
+  }
+}
 
-  /* === Enhanced Preview with Marketing Features === */
-  class EnhancedPreview {
-    constructor() {
-      this.isButtonFormat = true;
-      this.currentStyle = 1;
-      this.selectedPlatforms = new Set(['apple', 'google', 'outlook', 'outlookCom', 'office365', 'yahoo']);
-      this.configuration = {
-        color: 'default',
-        style: 'filled',
-        textIcon: 'icon+text',
-        size: '36px',
-        customText: 'Add to Calendar'
-      };
-      this.init();
-    }
+/**
+ * Manages form interactions and validation
+ */
+class FormManager {
+  constructor(app) {
+    this.app = app;
+  }
+  
+  init() {
+    // Initialize form validation
+    this.setupFormValidation();
+  }
+  
+  /**
+   * Set up form validation
+   */
+  setupFormValidation() {
+    // Add validation classes to required fields
+    const requiredFields = [
+      this.app.elements.eventTitle,
+      this.app.elements.startDate,
+      this.app.elements.endDate
+    ];
     
-    init() {
-      // Format switcher
-      $('buttonFormat').addEventListener('click', () => this.setFormat(true));
-      $('linksFormat').addEventListener('click', () => this.setFormat(false));
-      
-      // Style switcher
-      $('style1').addEventListener('click', () => this.setStyle(1));
-      $('style2').addEventListener('click', () => this.setStyle(2));
-      $('newStyle').addEventListener('click', () => this.openAdvancedConfig());
-      
-      // Platform selection
-      document.querySelectorAll('[id^="plt"]').forEach(checkbox => {
-        checkbox.addEventListener('change', (e) => {
-          const platform = e.target.id.replace('plt', '').toLowerCase();
-          if (e.target.checked) {
-            this.selectedPlatforms.add(platform);
-          } else {
-            this.selectedPlatforms.delete(platform);
-          }
-          this.updatePreview();
-        });
-      });
-      
-      // Update preview on form changes
-      [eventTitle, startDate, startTime, endDate, endTime, timezone, locationInp, organizer, organizerEmail]
-        .forEach(input => {
-          if (input) {
-            input.addEventListener('input', () => this.updatePreview());
-          }
-        });
-        
-      // Initial preview update
-      this.updatePreview();
-    }
-    
-    setFormat(isButton) {
-      this.isButtonFormat = isButton;
-      
-      // Update UI
-      const buttonBtn = $('buttonFormat');
-      const linksBtn = $('linksFormat');
-      
-      if (isButton) {
-        buttonBtn.classList.add('bg-primary', 'text-white');
-        buttonBtn.classList.remove('bg-gray-100', 'text-gray-700');
-        linksBtn.classList.add('bg-gray-100', 'text-gray-700');
-        linksBtn.classList.remove('bg-primary', 'text-white');
-        
-        $('buttonCustomization').classList.remove('hidden');
-        $('buttonPreview').classList.remove('hidden');
-        $('linksPreview').classList.add('hidden');
-        $('buttonUseCase').classList.remove('hidden');
-        $('linksUseCase').classList.add('hidden');
-      } else {
-        linksBtn.classList.add('bg-primary', 'text-white');
-        linksBtn.classList.remove('bg-gray-100', 'text-gray-700');
-        buttonBtn.classList.add('bg-gray-100', 'text-gray-700');
-        buttonBtn.classList.remove('bg-primary', 'text-white');
-        
-        $('buttonCustomization').classList.add('hidden');
-        $('buttonPreview').classList.add('hidden');
-        $('linksPreview').classList.remove('hidden');
-        $('buttonUseCase').classList.add('hidden');
-        $('linksUseCase').classList.remove('hidden');
-      }
-      
-      this.updatePreview();
-      this.generateCode();
-    }
-    
-    setStyle(styleNum) {
-      this.currentStyle = styleNum;
-      
-      const style1Btn = $('style1');
-      const style2Btn = $('style2');
-      
-      if (styleNum === 1) {
-        style1Btn.classList.add('bg-neutralDark', 'text-white');
-        style1Btn.classList.remove('bg-gray-200', 'text-gray-700');
-        style2Btn.classList.add('bg-gray-200', 'text-gray-700');
-        style2Btn.classList.remove('bg-neutralDark', 'text-white');
-      } else {
-        style2Btn.classList.add('bg-neutralDark', 'text-white');
-        style2Btn.classList.remove('bg-gray-200', 'text-gray-700');
-        style1Btn.classList.add('bg-gray-200', 'text-gray-700');
-        style1Btn.classList.remove('bg-neutralDark', 'text-white');
-      }
-      
-      this.updatePreview();
-      this.generateCode();
-    }
-    
-    openAdvancedConfig() {
-      // Create advanced configuration modal
-      const modal = document.createElement('div');
-      modal.id = 'advancedConfigModal';
-      modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
-      modal.innerHTML = `
-        <div class="bg-white rounded-xl max-w-md w-full">
-          <div class="p-6 border-b">
-            <h3 class="text-lg font-semibold">Advanced Configuration</h3>
-          </div>
-          <div class="p-6 space-y-4">
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Background</label>
-                <select id="configBackground" class="w-full px-3 py-2 border rounded-lg text-sm">
-                  <option value="default">Default Theme</option>
-                  <option value="light">Light</option>
-                  <option value="dark">Dark</option>
-                  <option value="gradient">Gradient</option>
-                  <option value="custom">Custom Color</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Border</label>
-                <select id="configBorder" class="w-full px-3 py-2 border rounded-lg text-sm">
-                  <option value="none">None</option>
-                  <option value="thin">Thin</option>
-                  <option value="thick">Thick</option>
-                  <option value="rounded">Fully Rounded</option>
-                </select>
-              </div>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Button Text</label>
-              <input type="text" id="configButtonText" value="Add to Calendar" 
-                     class="w-full px-3 py-2 border rounded-lg text-sm">
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Icon</label>
-              <select id="configIcon" class="w-full px-3 py-2 border rounded-lg text-sm">
-                <option value="calendar">📅 Calendar</option>
-                <option value="plus">➕ Plus</option>
-                <option value="bookmark">🔖 Bookmark</option>
-                <option value="none">No Icon</option>
-              </select>
-            </div>
-          </div>
-          <div class="p-4 border-t flex justify-end gap-2">
-            <button id="configCancel" class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded">
-              Cancel
-            </button>
-            <button id="configSave" class="px-4 py-2 bg-primary text-white rounded hover:bg-primary-hover">
-              Save
-            </button>
-          </div>
-        </div>
-      `;
-      
-      document.body.appendChild(modal);
-      
-      // Handle cancel
-      $('configCancel').addEventListener('click', () => {
-        document.body.removeChild(modal);
-      });
-      
-      // Handle save
-      $('configSave').addEventListener('click', () => {
-        const background = $('configBackground').value;
-        const border = $('configBorder').value;
-        const text = $('configButtonText').value;
-        const icon = $('configIcon').value;
-        
-        this.configuration = {
-          ...this.configuration,
-          color: background,
-          style: border,
-          customText: text,
-          icon: icon
-        };
-        
-        this.updatePreview();
-        this.generateCode();
-        document.body.removeChild(modal);
-      });
-      
-      // Close on outside click
-      modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-          document.body.removeChild(modal);
-        }
-      });
-    }
-    
-    updatePreview() {
-      // Update event preview card
-      if (eventTitle.value) {
-        previewTitle.textContent = eventTitle.value;
-      }
-      
-      // Format date/time
-      let dateTimeStr = '';
-      if (startDate.value) {
-        const startDt = new Date(startDate.value + 'T' + (startTime.value || '00:00'));
-        const endDt = endDate.value ? new Date(endDate.value + 'T' + (endTime.value || '00:00')) : null;
-        
-        const dateOpts = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
-        const timeOpts = { hour: '2-digit', minute: '2-digit', hour12: true };
-        
-        dateTimeStr = startDt.toLocaleDateString('en-US', dateOpts);
-        
-        if (startTime.value) {
-          dateTimeStr += ' • ' + startDt.toLocaleTimeString('en-US', timeOpts);
-          if (endDate.value && endTime.value) {
-            dateTimeStr += ' - ' + endDt.toLocaleTimeString('en-US', timeOpts);
-          }
-        }
-      }
-      
-      previewDateTime.textContent = dateTimeStr || 'May 10, 2025 • 9:00am - 10:00am';
-      previewTimezone.textContent = timezone.value.split('/')[1].replace('_', ' ') || 'GMT +03:00';
-      
-      // Update location and organizer
-      previewLocation.textContent = locationInp.value || '123 Demo Street, Springfield';
-      previewLocation.className = locationInp.value ? 'text-gray-600' : 'text-gray-500';
-      
-      const orgName = organizer.value || 'John Doe';
-      const orgEmail = organizerEmail.value ? ` (${organizerEmail.value})` : '';
-      previewOrganizer.textContent = `Organized by ${orgName}${orgEmail}`;
-      previewOrganizer.className = organizer.value ? 'text-gray-600' : 'text-gray-500';
-      
-      // Update description
-      const descValue = desc.value || '';
-      if (descValue) {
-        previewDescription.textContent = descValue;
-        previewDescription.classList.remove('hidden');
-      } else {
-        previewDescription.classList.add('hidden');
-      }
-      
-      // Update button/links preview
-      this.updateOutputPreview();
-    }
-    
-    updateOutputPreview() {
-      const buttonPreview = $('buttonPreview').querySelector('button');
-      const linksContainer = $('linksPreview').querySelector('.flex');
-      
-      if (this.isButtonFormat) {
-        // Update button style based on configuration
-        let buttonClasses = 'inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition';
-        let bgColor = '#333333';
-        let textColor = '#FFFFFF';
-        
-        if (this.currentStyle === 1) {
-          buttonClasses += ' bg-neutralDark text-white';
-        } else if (this.currentStyle === 2) {
-          buttonClasses += ' bg-white border border-gray-300 text-gray-700';
-        }
-        
-        buttonPreview.className = buttonClasses;
-        buttonPreview.innerHTML = `
-          <span class="text-base">${this.getIconForButton()}</span>
-          ${this.configuration.customText || 'Add to Calendar'}
-        `;
-      } else {
-        // Update links based on selected platforms
-        linksContainer.innerHTML = '';
-        
-        this.selectedPlatforms.forEach(platform => {
-          const link = this.createPlatformLink(platform);
-          linksContainer.appendChild(link);
+    requiredFields.forEach(field => {
+      if (field) {
+        field.addEventListener('blur', () => {
+          this.validateField(field);
         });
       }
-    }
+    });
     
-    getIconForButton() {
-      switch (this.configuration.icon) {
-        case 'plus': return '➕';
-        case 'bookmark': return '🔖';
-        case 'none': return '';
-        default: return '📅';
-      }
-    }
-    
-    createPlatformLink(platform) {
-      const link = document.createElement('a');
-      link.href = '#';
-      
-      const icons = {
-        'apple': '🍎',
-        'google': 'G',
-        'outlook': '📧',
-        'outlookcom': '◯',
-        'office365': '📦',
-        'yahoo': 'Y!'
-      };
-      
-      const styles = {
-        'apple': 'bg-black text-white',
-        'google': 'bg-white border border-gray-200 text-gray-700',
-        'outlook': 'bg-yellow-500 text-black',
-        'outlookcom': 'bg-blue-600 text-white',
-        'office365': 'bg-orange-500 text-white',
-        'yahoo': 'bg-purple-600 text-white'
-      };
-      
-      const names = {
-        'apple': 'Apple',
-        'google': 'Google',
-        'outlook': 'Outlook',
-        'outlookcom': 'Outlook.com',
-        'office365': 'Office 365',
-        'yahoo': 'Yahoo'
-      };
-      
-      link.className = `inline-flex items-center gap-1 px-3 py-1 rounded text-xs ${styles[platform] || ''}`;
-      link.innerHTML = `
-        <span>${icons[platform] || ''}</span>
-        ${names[platform] || platform}
-      `;
-      
-      return link;
-    }
-    
-    generateCode() {
-      const eventData = this.getEventData();
-      let code = '';
-      
-      if (this.isButtonFormat) {
-        code = this.generateButtonCode(eventData);
-      } else {
-        code = this.generateLinksCode(eventData);
-      }
-      
-      if (snippetCode) {
-        snippetCode.textContent = code;
-      }
-    }
-    
-    getEventData() {
-      return {
-        title: eventTitle.value || 'Product launch webinar',
-        startDate: startDate.value || '2025-05-10',
-        startTime: startTime.value || '09:00',
-        endDate: endDate.value || '',
-        endTime: endTime.value || '',
-        timezone: timezone.value || 'Asia/Istanbul',
-        location: locationInp.value || '123 Demo Street, Springfield',
-        description: desc.value || '',
-        organizer: organizer.value || 'John Doe',
-        organizerEmail: organizerEmail.value || ''
-      };
-    }
-    
-    generateButtonCode(eventData) {
-      // Generate unique ID for this calendar event
-      const eventId = 'event_' + Date.now();
-      
-      // Generate the calendar links for each platform
-      const links = {};
-      this.selectedPlatforms.forEach(platform => {
-        links[platform] = this.generateCalendarLink(platform, eventData);
+    // Validate email format
+    if (this.app.elements.organizerEmail) {
+      this.app.elements.organizerEmail.addEventListener('blur', () => {
+        this.validateEmail(this.app.elements.organizerEmail);
       });
+    }
+  }
+  
+  /**
+   * Validate a required field
+   */
+  validateField(field) {
+    if (!field.value.trim()) {
+      field.classList.add('border-error');
+      return false;
+    } else {
+      field.classList.remove('border-error');
+      return true;
+    }
+  }
+  
+  /**
+   * Validate email format
+   */
+  validateEmail(field) {
+    if (field.value.trim() === '') {
+      // Empty email is allowed
+      field.classList.remove('border-error');
+      return true;
+    }
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(field.value)) {
+      field.classList.add('border-error');
+      return false;
+    } else {
+      field.classList.remove('border-error');
+      return true;
+    }
+  }
+  
+  /**
+   * Validate the entire form
+   */
+  validateForm() {
+    let isValid = true;
+    
+    // Validate required fields
+    isValid = this.validateField(this.app.elements.eventTitle) && isValid;
+    isValid = this.validateField(this.app.elements.startDate) && isValid;
+    isValid = this.validateField(this.app.elements.endDate) && isValid;
+    
+    // Validate email if provided
+    if (this.app.elements.organizerEmail.value.trim() !== '') {
+      isValid = this.validateEmail(this.app.elements.organizerEmail) && isValid;
+    }
+    
+    // Validate date logic (end date/time must be after start date/time)
+    const startDateTime = new Date(`${this.app.elements.startDate.value}T${this.app.elements.startTime.value}`);
+    const endDateTime = new Date(`${this.app.elements.endDate.value}T${this.app.elements.endTime.value}`);
+    
+    if (endDateTime <= startDateTime) {
+      this.app.elements.endDate.classList.add('border-error');
+      this.app.elements.endTime.classList.add('border-error');
+      isValid = false;
+    } else {
+      this.app.elements.endDate.classList.remove('border-error');
+      this.app.elements.endTime.classList.remove('border-error');
+    }
+    
+    return isValid;
+  }
+  
+  /**
+   * Handle all-day event toggle
+   */
+  handleAllDayToggle() {
+    const isAllDay = this.app.elements.allDay.checked;
+    
+    if (isAllDay) {
+      // Disable time inputs
+      this.app.elements.startTime.disabled = true;
+      this.app.elements.endTime.disabled = true;
       
-      // Create the button HTML
-      let buttonCode = `<div id="${eventId}" style="font-family: Nunito, sans-serif;">
-  <button class="easycal-button" style="`;
+      // Store current times
+      this.app.elements.startTime.dataset.prevValue = this.app.elements.startTime.value;
+      this.app.elements.endTime.dataset.prevValue = this.app.elements.endTime.value;
       
-      // Apply button styles
-      if (this.currentStyle === 1) {
-        buttonCode += `background: #333333; color: #FFFFFF; border: none;`;
-      } else if (this.currentStyle === 2) {
-        buttonCode += `background: #FFFFFF; color: #333333; border: 1px solid #D1D5DB;`;
+      // Set times to full day
+      this.app.elements.startTime.value = '00:00';
+      this.app.elements.endTime.value = '23:59';
+    } else {
+      // Re-enable time inputs
+      this.app.elements.startTime.disabled = false;
+      this.app.elements.endTime.disabled = false;
+      
+      // Restore previous times if available
+      if (this.app.elements.startTime.dataset.prevValue) {
+        this.app.elements.startTime.value = this.app.elements.startTime.dataset.prevValue;
       }
       
-      buttonCode += `padding: 8px 16px; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: all 0.15s;">
-    <span style="font-size: 16px;">${this.getIconForButton()}</span>
-    ${this.configuration.customText || 'Add to Calendar'}
+      if (this.app.elements.endTime.dataset.prevValue) {
+        this.app.elements.endTime.value = this.app.elements.endTime.dataset.prevValue;
+      }
+    }
+    
+    this.app.updatePreview();
+  }
+  
+  /**
+   * Handle create button click
+   */
+  handleCreate() {
+    if (this.validateForm()) {
+      // Generate the final code
+      this.app.codeGenerator.updateCode();
+      
+      // Show success message or perform additional actions
+      this.showSuccessMessage('Event created successfully!');
+    }
+  }
+  
+  /**
+   * Handle cancel button click
+   */
+  handleCancel() {
+    // Reset form to default values
+    this.resetForm();
+  }
+  
+  /**
+   * Handle save button click
+   */
+  handleSave() {
+    if (this.validateForm()) {
+      // Save event data (could be to localStorage or server)
+      const eventData = this.app.getEventData();
+      localStorage.setItem('easycal_saved_event', JSON.stringify(eventData));
+      
+      this.showSuccessMessage('Event saved successfully!');
+    }
+  }
+  
+  /**
+   * Reset form to default values
+   */
+  resetForm() {
+    // Clear form fields
+    this.app.elements.eventTitle.value = '';
+    this.app.elements.location.value = '';
+    this.app.elements.smartEditor.innerHTML = '';
+    this.app.elements.description.value = '';
+    this.app.elements.organizer.value = '';
+    this.app.elements.organizerEmail.value = '';
+    
+    // Reset checkboxes
+    this.app.elements.allDay.checked = false;
+    this.app.elements.recurring.checked = false;
+    this.app.elements.rsvp.checked = false;
+    
+    // Reset date/time to defaults
+    this.app.initializeValues();
+    
+    // Update preview
+    this.app.updatePreview();
+  }
+  
+  /**
+   * Show a success message
+   */
+  showSuccessMessage(message) {
+    // Could implement a toast or alert
+    alert(message);
+  }
+}
+
+/**
+ * Manages the live preview
+ */
+class PreviewManager {
+  constructor(app) {
+    this.app = app;
+  }
+  
+  init() {
+    // Initial preview update
+    this.updatePreview();
+  }
+  
+  /**
+   * Update the preview with current form values
+   */
+  updatePreview() {
+    const eventData = this.app.getEventData();
+    
+    // Update title
+    if (this.app.elements.previewTitle) {
+      this.app.elements.previewTitle.textContent = eventData.title || 'Event Title';
+    }
+    
+    // Update date/time
+    if (this.app.elements.previewDateTime) {
+      if (eventData.allDay) {
+        this.app.elements.previewDateTime.textContent = 'All day';
+      } else {
+        const startTime = this.app.formatDateTimeForDisplay(eventData.startDate, eventData.startTime);
+        const endTime = this.app.formatDateTimeForDisplay(eventData.endDate, eventData.endTime);
+        this.app.elements.previewDateTime.textContent = `${startTime} - ${endTime}`;
+      }
+    }
+    
+    // Update timezone
+    if (this.app.elements.previewTimezone) {
+      if (eventData.timezone && this.app.elements.timezone) {
+        const selectedOption = this.app.elements.timezone.options[this.app.elements.timezone.selectedIndex];
+        this.app.elements.previewTimezone.textContent = selectedOption.text;
+        this.app.elements.previewTimezone.classList.remove('hidden');
+      } else {
+        this.app.elements.previewTimezone.classList.add('hidden');
+      }
+    }
+    
+    // Update location
+    if (this.app.elements.previewLocation) {
+      if (eventData.location) {
+        this.app.elements.previewLocation.textContent = eventData.location;
+        this.app.elements.previewLocation.parentElement.classList.remove('hidden');
+      } else {
+        this.app.elements.previewLocation.parentElement.classList.add('hidden');
+      }
+    }
+    
+    // Update organizer
+    if (this.app.elements.previewOrganizer) {
+      if (eventData.organizer) {
+        let organizerText = eventData.organizer;
+        if (eventData.organizerEmail) {
+          organizerText += ` (${eventData.organizerEmail})`;
+        }
+        this.app.elements.previewOrganizer.textContent = organizerText;
+        this.app.elements.previewOrganizer.parentElement.classList.remove('hidden');
+      } else {
+        this.app.elements.previewOrganizer.parentElement.classList.add('hidden');
+      }
+    }
+    
+    // Update description
+    if (this.app.elements.previewDescription) {
+      if (eventData.description) {
+        // Strip HTML tags for preview
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = eventData.description;
+        const textContent = tempDiv.textContent || tempDiv.innerText || '';
+        
+        // Truncate if too long
+        const maxLength = 100;
+        let displayText = textContent;
+        if (textContent.length > maxLength) {
+          displayText = textContent.substring(0, maxLength) + '...';
+        }
+        
+        this.app.elements.previewDescription.textContent = displayText;
+        this.app.elements.previewDescription.classList.remove('hidden');
+      } else {
+        this.app.elements.previewDescription.classList.add('hidden');
+      }
+    }
+    
+    // Update button preview
+    this.updateButtonPreview();
+  }
+  
+  /**
+   * Update the button preview based on current style settings
+   */
+  updateButtonPreview() {
+    // Get the button preview element
+    const buttonPreview = this.app.elements.buttonPreview.querySelector('button');
+    if (!buttonPreview) return;
+    
+    // Update button style based on current settings
+    if (this.app.state.buttonStyle === 'dark') {
+      buttonPreview.className = 'inline-flex items-center gap-2 px-4 py-2 bg-neutralDark text-white rounded-lg text-sm font-medium hover:opacity-90 transition';
+    } else {
+      buttonPreview.className = 'inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-800 rounded-lg text-sm font-medium hover:bg-gray-50 transition';
+    }
+    
+    // Apply custom color if set
+    if (this.app.state.buttonColor && this.app.state.buttonColor !== '#333333' && this.app.state.buttonStyle === 'dark') {
+      buttonPreview.style.backgroundColor = this.app.state.buttonColor;
+    } else {
+      buttonPreview.style.backgroundColor = '';
+    }
+  }
+}
+
+/**
+ * Generates code for calendar buttons and links
+ */
+class CodeGenerator {
+  constructor(app) {
+    this.app = app;
+  }
+  
+  init() {
+    // Initial code generation
+    this.updateCode();
+  }
+  
+  /**
+   * Update the generated code based on current form values
+   */
+  updateCode() {
+    const eventData = this.app.getEventData();
+    const outputFormat = this.app.state.outputFormat;
+    
+    let code = '';
+    
+    if (outputFormat === 'button') {
+      code = this.generateButtonCode(eventData);
+    } else {
+      code = this.generateLinksCode(eventData);
+    }
+    
+    // Update code snippet
+    if (this.app.elements.snippetCode) {
+      this.app.elements.snippetCode.textContent = code;
+    }
+  }
+  
+  /**
+   * Generate code for the "Add to Calendar" button
+   */
+  generateButtonCode(eventData) {
+    // Create the button HTML
+    const buttonStyle = this.app.state.buttonStyle;
+    const buttonColor = this.app.state.buttonColor;
+    
+    let buttonClass = '';
+    let buttonStyles = '';
+    
+    if (buttonStyle === 'dark') {
+      buttonClass = 'bg-neutralDark text-white';
+      if (buttonColor && buttonColor !== '#333333') {
+        buttonStyles = `style="background-color: ${buttonColor};"`;
+        buttonClass = 'text-white';
+      }
+    } else {
+      buttonClass = 'bg-white border border-gray-200 text-gray-800';
+    }
+    
+    // Generate calendar URLs
+    const calendarUrls = this.generateCalendarUrls(eventData);
+    
+    // Create dropdown HTML
+    let dropdownHtml = '';
+    Object.keys(calendarUrls).forEach(platform => {
+      if (this.app.state.platforms[platform]) {
+        const platformInfo = this.getPlatformInfo(platform);
+        dropdownHtml += `
+          <a href="${calendarUrls[platform]}" target="_blank" rel="noopener noreferrer" 
+             class="block px-4 py-2 text-sm hover:bg-gray-100">
+            <span class="inline-flex items-center">
+              <span class="mr-2">${platformInfo.icon}</span>
+              ${platformInfo.name}
+            </span>
+          </a>`;
+      }
+    });
+    
+    // Complete button code with dropdown
+    const code = `<!-- EasyCal Button -->
+<div class="easycal-dropdown relative inline-block">
+  <button class="easycal-button inline-flex items-center gap-2 px-4 py-2 ${buttonClass} rounded-lg text-sm font-medium hover:opacity-90 transition" ${buttonStyles}>
+    <span class="text-base">📅</span>
+    Add to Calendar
   </button>
-  <div id="${eventId}_dropdown" class="easycal-dropdown" style="display: none; position: absolute; background: white; border: 1px solid #E5E7EB; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 1000; min-width: 200px;">`;
-      
-      // Add platform links
-      this.selectedPlatforms.forEach(platform => {
-        const icon = {
-          'apple': '🍎',
-          'google': '📅',
-          'outlook': '📧',
-          'outlookcom': '◯',
-          'office365': '📦',
-          'yahoo': 'Y!'
-        }[platform] || '';
-        
-        const name = {
-          'apple': 'Apple Calendar',
-          'google': 'Google Calendar',
-          'outlook': 'Outlook',
-          'outlookcom': 'Outlook.com',
-          'office365': 'Office 365',
-          'yahoo': 'Yahoo Calendar'
-        }[platform] || platform;
-        
-        buttonCode += `
-    <a href="${links[platform]}" target="_blank" style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; text-decoration: none; color: #333; transition: background 0.15s;" onmouseover="this.style.background='#F3F4F6'" onmouseout="this.style.background='transparent'">
-      <span style="font-size: 16px;">${icon}</span>
-      <span style="font-size: 14px;">${name}</span>
-    </a>`;
-      });
-      
-      buttonCode += `
+  <div class="easycal-dropdown-content hidden absolute left-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
+    ${dropdownHtml}
   </div>
 </div>
 
-<style>
-  .easycal-button:hover {
-    opacity: 0.9;
-    transform: translateY(-1px);
-  }
-  .easycal-button:active {
-    transform: scale(0.98);
-  }
-</style>
-
 <script>
-  document.getElementById('${eventId}').onclick = function(e) {
-    e.stopPropagation();
-    var dropdown = document.getElementById('${eventId}_dropdown');
-    dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
-  };
-  
-  document.addEventListener('click', function() {
-    var dropdown = document.getElementById('${eventId}_dropdown');
-    if (dropdown) dropdown.style.display = 'none';
-  });
-</script>`;
-      
-      return buttonCode;
-    }
+  // EasyCal Button Script
+  document.addEventListener('DOMContentLoaded', function() {
+    const button = document.querySelector('.easycal-button');
+    const dropdown = document.querySelector('.easycal-dropdown-content');
     
-    generateLinksCode(eventData) {
-      let linksCode = `<!-- Add to Calendar Links -->
-<p>Add event to calendar:</p>
-<div style="display: flex; gap: 8px; flex-wrap: wrap; font-family: Nunito, sans-serif;">`;
-      
-      this.selectedPlatforms.forEach(platform => {
-        const url = this.generateCalendarLink(platform, eventData);
-        const icon = {
-          'apple': '🍎',
-          'google': '📅',
-          'outlook': '📧',
-          'outlookcom': '◯',
-          'office365': '📦',
-          'yahoo': 'Y!'
-        }[platform] || '';
-        
-        const name = {
-          'apple': 'Apple',
-          'google': 'Google',
-          'outlook': 'Outlook',
-          'outlookcom': 'Outlook.com',
-          'office365': 'Office 365',
-          'yahoo': 'Yahoo'
-        }[platform] || platform;
-        
-        const styles = {
-          'apple': 'background: #000; color: #fff;',
-          'google': 'background: #fff; border: 1px solid #e5e7eb; color: #333;',
-          'outlook': 'background: #eab308; color: #000;',
-          'outlookcom': 'background: #2563eb; color: #fff;',
-          'office365': 'background: #ea580c; color: #fff;',
-          'yahoo': 'background: #9333ea; color: #fff;'
-        }[platform] || '';
-        
-        linksCode += `
-  <a href="${url}" target="_blank" style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; border-radius: 4px; text-decoration: none; ${styles} font-size: 12px;">
-    <span>${icon}</span> ${name}
-  </a>`;
+    if (button && dropdown) {
+      button.addEventListener('click', function(e) {
+        e.preventDefault();
+        dropdown.classList.toggle('hidden');
       });
       
-      linksCode += `
-</div>`;
-      
-      return linksCode;
-    }
-    
-    generateCalendarLink(platform, eventData) {
-      const startDateTime = new Date(`${eventData.startDate}T${eventData.startTime || '00:00'}`);
-      const endDateTime = eventData.endDate ? new Date(`${eventData.endDate}T${eventData.endTime || '00:00'}`) : new Date(startDateTime.getTime() + 60 * 60 * 1000);
-      
-      const formatDate = (date) => {
-        return date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z');
-      };
-      
-      const formatDateForOutlook = (date) => {
-        return date.toISOString().replace(/\.\d{3}Z$/, '');
-      };
-      
-      const encodeParam = (str) => {
-        return encodeURIComponent(str).replace(/[!'()*]/g, function(c) {
-          return '%' + c.charCodeAt(0).toString(16);
-        });
-      };
-      
-      switch (platform) {
-        case 'google':
-          const googleStart = formatDate(startDateTime);
-          const googleEnd = formatDate(endDateTime);
-          const googleTitle = encodeParam(eventData.title);
-          const googleDetails = encodeParam(eventData.description);
-          const googleLocation = encodeParam(eventData.location);
-          
-          return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${googleTitle}&dates=${googleStart}/${googleEnd}&details=${googleDetails}&location=${googleLocation}`;
-          
-        case 'outlook':
-          const outlookStart = formatDateForOutlook(startDateTime);
-          const outlookEnd = formatDateForOutlook(endDateTime);
-          const outlookParams = new URLSearchParams({
-            path: '/calendar/action/compose',
-            subject: eventData.title,
-            startdt: outlookStart,
-            enddt: outlookEnd,
-            body: eventData.description,
-            location: eventData.location
-          });
-          
-          return `https://outlook.live.com/calendar/0/deeplink/compose?${outlookParams}`;
-          
-        case 'outlookcom':
-          const outlookComParams = new URLSearchParams({
-            subject: eventData.title,
-            startdt: formatDateForOutlook(startDateTime),
-            enddt: formatDateForOutlook(endDateTime),
-            body: eventData.description,
-            location: eventData.location
-          });
-          
-          return `https://outlook.office.com/calendar/0/deeplink/compose?${outlookComParams}`;
-          
-        case 'office365':
-          const office365Params = new URLSearchParams({
-            subject: eventData.title,
-            startdt: formatDateForOutlook(startDateTime),
-            enddt: formatDateForOutlook(endDateTime),
-            body: eventData.description,
-            location: eventData.location
-          });
-          
-          return `https://outlook.office365.com/calendar/0/deeplink/compose?${office365Params}`;
-          
-        case 'yahoo':
-          const yahooStart = startDateTime.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, '');
-          const yahooEnd = endDateTime.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, '');
-          const yahooParams = new URLSearchParams({
-            v: '60',
-            title: eventData.title,
-            st: yahooStart,
-            et: yahooEnd,
-            desc: eventData.description,
-            in_loc: eventData.location
-          });
-          
-          return `https://calendar.yahoo.com/?${yahooParams}`;
-          
-        case 'apple':
-          // Apple Calendar uses ICS file format
-          const icsContent = this.generateICSFile(eventData);
-          const blob = new Blob([icsContent], { type: 'text/calendar' });
-          return URL.createObjectURL(blob);
-          
-        default:
-          return '#';
-      }
-    }
-    
-    generateICSFile(eventData) {
-      const startDateTime = new Date(`${eventData.startDate}T${eventData.startTime || '00:00'}`);
-      const endDateTime = eventData.endDate ? new Date(`${eventData.endDate}T${eventData.endTime || '00:00'}`) : new Date(startDateTime.getTime() + 60 * 60 * 1000);
-      
-      const formatICSDate = (date) => {
-        return date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z');
-      };
-      
-      let ics = `BEGIN:VCALENDAR
-VERSION:2.0
-PRODID:-//EasyCal//Calendar//EN
-METHOD:PUBLISH
-BEGIN:VEVENT
-UID:${Date.now()}@easycal.com
-DTSTART:${formatICSDate(startDateTime)}
-DTEND:${formatICSDate(endDateTime)}
-SUMMARY:${eventData.title.replace(/\n/g, '\\n')}
-DESCRIPTION:${eventData.description.replace(/\n/g, '\\n')}
-LOCATION:${eventData.location.replace(/\n/g, '\\n')}`;
-      
-      if (eventData.organizer) {
-        ics += `\nORGANIZER:CN=${eventData.organizer}:MAILTO:${eventData.organizerEmail || 'organizer@example.com'}`;
-      }
-      
-      ics += `\nEND:VEVENT
-END:VCALENDAR`;
-      
-      return ics;
-    }
-  }
-
-  /* === Copy Functionality === */
-  class CopyManager {
-    constructor() {
-      this.copyButton = $('copyButton');
-      this.mainCopyButton = $('mainCopyButton');
-      this.init();
-    }
-    
-    init() {
-      [this.copyButton, this.mainCopyButton].forEach(button => {
-        if (button) {
-          button.addEventListener('click', () => this.copyCode());
+      // Close dropdown when clicking outside
+      document.addEventListener('click', function(e) {
+        if (!button.contains(e.target) && !dropdown.contains(e.target)) {
+          dropdown.classList.add('hidden');
         }
       });
     }
+  });
+</script>`;
     
-    async copyCode() {
-      const code = snippetCode?.textContent || '';
-      
-      try {
-        await navigator.clipboard.writeText(code);
-        this.showSuccessToast();
-      } catch (err) {
-        console.error('Failed to copy:', err);
-        // Fallback for older browsers
-        this.fallbackCopy(code);
-      }
-    }
+    return code;
+  }
+  
+  /**
+   * Generate code for individual calendar links
+   */
+  generateLinksCode(eventData) {
+    // Generate calendar URLs
+    const calendarUrls = this.generateCalendarUrls(eventData);
     
-    fallbackCopy(text) {
-      const textArea = document.createElement('textarea');
-      textArea.value = text;
-      textArea.style.position = 'fixed';
-      textArea.style.left = '-999999px';
-      textArea.style.top = '-999999px';
-      document.body.appendChild(textArea);
-      textArea.focus();
-      textArea.select();
-      
-      try {
-        document.execCommand('copy');
-        this.showSuccessToast();
-      } catch (err) {
-        console.error('Fallback copy failed:', err);
+    // Create links HTML
+    let linksHtml = '';
+    Object.keys(calendarUrls).forEach(platform => {
+      if (this.app.state.platforms[platform]) {
+        const platformInfo = this.getPlatformInfo(platform);
+        linksHtml += `<a href="${calendarUrls[platform]}" target="_blank" rel="noopener noreferrer" 
+                      class="inline-flex items-center gap-1 px-3 py-1 ${platformInfo.class} rounded text-xs mb-2 mr-2">
+                        <span>${platformInfo.icon}</span> ${platformInfo.name}
+                      </a>\n`;
       }
-      
-      document.body.removeChild(textArea);
-    }
+    });
     
-    showSuccessToast() {
-      if (toast) {
-        toast.classList.add('show');
-        setTimeout(() => {
-          toast.classList.remove('show');
-        }, 2000);
-      }
+    // Complete links code
+    const code = `<!-- EasyCal Links -->
+<div class="easycal-links">
+  <div class="text-sm mb-2">Add event to calendar:</div>
+  <div class="flex flex-wrap">
+    ${linksHtml}
+  </div>
+</div>`;
+    
+    return code;
+  }
+  
+  /**
+   * Generate calendar URLs for different platforms
+   */
+  generateCalendarUrls(eventData) {
+    // Format dates for URLs
+    const startDate = eventData.startDate ? new Date(`${eventData.startDate}T${eventData.startTime || '00:00'}`) : new Date();
+    const endDate = eventData.endDate ? new Date(`${eventData.endDate}T${eventData.endTime || '00:00'}`) : new Date(startDate.getTime() + 3600000); // Default to 1 hour later
+    
+    // Format title and description for URLs
+    const title = encodeURIComponent(eventData.title || 'Event');
+    const location = encodeURIComponent(eventData.location || '');
+    
+    // Strip HTML from description
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = eventData.description || '';
+    const description = encodeURIComponent(tempDiv.textContent || tempDiv.innerText || '');
+    
+    // Generate URLs for each platform
+    return {
+      apple: this.generateAppleCalendarUrl(title, startDate, endDate, description, location, eventData),
+      google: this.generateGoogleCalendarUrl(title, startDate, endDate, description, location, eventData),
+      outlook: this.generateOutlookCalendarUrl(title, startDate, endDate, description, location, eventData),
+      outlookCom: this.generateOutlookComCalendarUrl(title, startDate, endDate, description, location, eventData),
+      office365: this.generateOffice365CalendarUrl(title, startDate, endDate, description, location, eventData),
+      yahoo: this.generateYahooCalendarUrl(title, startDate, endDate, description, location, eventData)
+    };
+  }
+  
+  /**
+   * Format date for calendar URLs
+   */
+  formatDateForUrl(date, format) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+    
+    switch (format) {
+      case 'google':
+        return `${year}${month}${day}T${hours}${minutes}${seconds}`;
+      case 'yahoo':
+        return `${year}${month}${day}T${hours}${minutes}00Z`;
+      case 'ics':
+        return `${year}${month}${day}T${hours}${minutes}00`;
+      default:
+        return `${year}-${month}-${day}T${hours}:${minutes}:00`;
     }
   }
+  
+  /**
+   * Generate Apple Calendar URL
+   */
+  generateAppleCalendarUrl(title, startDate, endDate, description, location, eventData) {
+    // Apple Calendar uses .ics file format
+    const icsContent = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'BEGIN:VEVENT',
+      `SUMMARY:${title}`,
+      `DTSTART:${this.formatDateForUrl(startDate, 'ics')}`,
+      `DTEND:${this.formatDateForUrl(endDate, 'ics')}`,
+      `DESCRIPTION:${description}`,
+      `LOCATION:${location}`,
+      'END:VEVENT',
+      'END:VCALENDAR'
+    ].join('\n');
+    
+    // Create data URI for .ics file
+    const dataUri = `data:text/calendar;charset=utf-8,${encodeURIComponent(icsContent)}`;
+    return dataUri;
+  }
+  
+  /**
+   * Generate Google Calendar URL
+   */
+  generateGoogleCalendarUrl(title, startDate, endDate, description, location, eventData) {
+    const baseUrl = 'https://calendar.google.com/calendar/render';
+    const params = new URLSearchParams({
+      action: 'TEMPLATE',
+      text: decodeURIComponent(title),
+      dates: `${this.formatDateForUrl(startDate, 'google')}/${this.formatDateForUrl(endDate, 'google')}`,
+      details: decodeURIComponent(description),
+      location: decodeURIComponent(location),
+      sf: 'true',
+      output: 'xml'
+    });
+    
+    return `${baseUrl}?${params.toString()}`;
+  }
+  
+  /**
+   * Generate Outlook Calendar URL
+   */
+  generateOutlookCalendarUrl(title, startDate, endDate, description, location, eventData) {
+    // Outlook Desktop uses .ics file format (same as Apple)
+    return this.generateAppleCalendarUrl(title, startDate, endDate, description, location, eventData);
+  }
+  
+  /**
+   * Generate Outlook.com Calendar URL
+   */
+  generateOutlookComCalendarUrl(title, startDate, endDate, description, location, eventData) {
+    const baseUrl = 'https://outlook.live.com/calendar/0/deeplink/compose';
+    const params = new URLSearchParams({
+      subject: decodeURIComponent(title),
+      startdt: startDate.toISOString(),
+      enddt: endDate.toISOString(),
+      body: decodeURIComponent(description),
+      location: decodeURIComponent(location),
+      path: '/calendar/action/compose'
+    });
+    
+    return `${baseUrl}?${params.toString()}`;
+  }
+  
+  /**
+   * Generate Office 365 Calendar URL
+   */
+  generateOffice365CalendarUrl(title, startDate, endDate, description, location, eventData) {
+    const baseUrl = 'https://outlook.office.com/calendar/0/deeplink/compose';
+    const params = new URLSearchParams({
+      subject: decodeURIComponent(title),
+      startdt: startDate.toISOString(),
+      enddt: endDate.toISOString(),
+      body: decodeURIComponent(description),
+      location: decodeURIComponent(location),
+      path: '/calendar/action/compose'
+    });
+    
+    return `${baseUrl}?${params.toString()}`;
+  }
+  
+  /**
+   * Generate Yahoo Calendar URL
+   */
+  generateYahooCalendarUrl(title, startDate, endDate, description, location, eventData) {
+    const baseUrl = 'https://calendar.yahoo.com/';
+    const params = new URLSearchParams({
+      title: decodeURIComponent(title),
+      st: this.formatDateForUrl(startDate, 'yahoo'),
+      et: this.formatDateForUrl(endDate, 'yahoo'),
+      desc: decodeURIComponent(description),
+      in_loc: decodeURIComponent(location)
+    });
+    
+    return `${baseUrl}?${params.toString()}`;
+  }
+  
+  /**
+   * Get platform information (name, icon, class)
+   */
+  getPlatformInfo(platform) {
+    const platformInfo = {
+      apple: {
+        name: 'Apple',
+        icon: '🍎',
+        class: 'bg-black text-white'
+      },
+      google: {
+        name: 'Google',
+        icon: 'G',
+        class: 'bg-white border border-gray-200 text-gray-700'
+      },
+      outlook: {
+        name: 'Outlook',
+        icon: '📧',
+        class: 'bg-yellow-500 text-black'
+      },
+      outlookCom: {
+        name: 'Outlook.com',
+        icon: '◯',
+        class: 'bg-blue-600 text-white'
+      },
+      office365: {
+        name: 'Office 365',
+        icon: '📦',
+        class: 'bg-orange-500 text-white'
+      },
+      yahoo: {
+        name: 'Yahoo',
+        icon: 'Y!',
+        class: 'bg-purple-600 text-white'
+      }
+    };
+    
+    return platformInfo[platform] || { name: platform, icon: '📅', class: 'bg-gray-500 text-white' };
+  }
+}
 
-  /* === Sharing Features === */
-  class ShareManager {
-    constructor() {
-      this.shareButton = $('shareButton');
-      this.shareDropdown = $('shareDropdown');
-      this.init();
+/**
+ * Manages clipboard operations
+ */
+class CopyManager {
+  constructor(app) {
+    this.app = app;
+  }
+  
+  init() {
+    // Initialize copy functionality
+  }
+  
+  /**
+   * Copy generated code to clipboard
+   */
+  copyCode() {
+    const code = this.app.elements.snippetCode.textContent;
+    
+    if (!code) {
+      console.warn('No code to copy');
+      return;
     }
     
-    init() {
-      if (this.shareButton) {
-        this.shareButton.addEventListener('click', (e) => {
-          e.stopPropagation();
-          this.toggleDropdown();
+    // Use Clipboard API if available
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(code)
+        .then(() => this.showCopySuccess())
+        .catch(err => {
+          console.error('Could not copy text: ', err);
+          this.fallbackCopy(code);
         });
-      }
-      
-      document.addEventListener('click', () => {
-        this.closeDropdown();
-      });
-      
-      // Add share options
-      if (this.shareDropdown) {
-        this.setupShareOptions();
-      }
-    }
-    
-    toggleDropdown() {
-      if (this.shareDropdown) {
-        this.shareDropdown.classList.toggle('hidden');
-      }
-    }
-    
-    closeDropdown() {
-      if (this.shareDropdown) {
-        this.shareDropdown.classList.add('hidden');
-      }
-    }
-    
-    setupShareOptions() {
-      const options = this.shareDropdown.querySelectorAll('button');
-      
-      options[0]?.addEventListener('click', () => this.shareViaEmail());
-      options[1]?.addEventListener('click', () => this.copyLink());
-      options[2]?.addEventListener('click', () => this.downloadQRCode());
-    }
-    
-    shareViaEmail() {
-      const eventData = this.getEventData();
-      const subject = `Add to Calendar: ${eventData.title}`;
-      const body = `Hi,\n\nYou're invited to add this event to your calendar:\n\n${eventData.title}\n${eventData.startDate} at ${eventData.startTime}\n${eventData.location}\n\nAdd to your calendar: ${this.getShareableLink()}`;
-      
-      window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
-    }
-    
-    async copyLink() {
-      const link = this.getShareableLink();
-      try {
-        await navigator.clipboard.writeText(link);
-        // Show success message
-        console.log('Link copied to clipboard');
-      } catch (err) {
-        console.error('Failed to copy link:', err);
-      }
-    }
-    
-    downloadQRCode() {
-      // Generate QR code for the shareable link
-      const link = this.getShareableLink();
-      // In a real implementation, you'd use a QR code library here
-      console.log('Generate QR code for:', link);
-    }
-    
-    getShareableLink() {
-      // In a real implementation, this would generate a shareable link
-      // For now, we'll return a placeholder
-      return 'https://easycal.com/event/12345';
-    }
-    
-    getEventData() {
-      return {
-        title: eventTitle.value || 'Product launch webinar',
-        startDate: startDate.value || '2025-05-10',
-        startTime: startTime.value || '09:00',
-        location: locationInp.value || '123 Demo Street, Springfield'
-      };
+    } else {
+      this.fallbackCopy(code);
     }
   }
-
-  /* === Form Management === */
-  class FormManager {
-    constructor() {
-      this.createButton = createButton;
-      this.cancelButton = cancelButton;
-      this.init();
+  
+  /**
+   * Fallback copy method for browsers without Clipboard API
+   */
+  fallbackCopy(text) {
+    // Create a temporary textarea
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    
+    // Make the textarea out of viewport
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    textArea.style.top = '-999999px';
+    document.body.appendChild(textArea);
+    
+    // Select and copy
+    textArea.focus();
+    textArea.select();
+    
+    let success = false;
+    try {
+      success = document.execCommand('copy');
+    } catch (err) {
+      console.error('Fallback copy failed:', err);
     }
     
-    init() {
-      if (this.createButton) {
-        this.createButton.addEventListener('click', () => this.createEvent());
-      }
-      
-      if (this.cancelButton) {
-        this.cancelButton.addEventListener('click', () => this.resetForm());
-      }
-      
-      // Initialize preview updates
-      this.setupPreviewUpdates();
-    }
+    // Clean up
+    document.body.removeChild(textArea);
     
-    createEvent() {
-      // Validate form
-      if (!this.validateForm()) {
-        this.showValidationErrors();
-        return;
-      }
-      
-      // Generate code
-      preview.generateCode();
-      
-      // Scroll to preview or show success message
-      this.showCreateSuccess();
-    }
-    
-    resetForm() {
-      // Reset all form fields
-      eventTitle.value = '';
-      startDate.value = '';
-      startTime.value = '';
-      endDate.value = '';
-      endTime.value = '';
-      timezone.selectedIndex = 0;
-      locationInp.value = '';
-      document.getElementById('smartEditor').innerHTML = '';
-      desc.value = '';
-      organizer.value = '';
-      organizerEmail.value = '';
-      
-      // Reset checkboxes
-      document.querySelectorAll('[type="checkbox"]').forEach(cb => {
-        cb.checked = false;
-      });
-      
-      // Reset platform selections
-      document.querySelectorAll('[id^="plt"]').forEach(cb => {
-        cb.checked = true;
-      });
-      
-      // Update preview
-      updatePreview();
-    }
-    
-    validateForm() {
-      // Basic validation - require at least title and start date
-      return eventTitle.value.trim() !== '' && startDate.value !== '';
-    }
-    
-    showValidationErrors() {
-      // You could add validation error messages here
-      console.log('Please fill in required fields');
-    }
-    
-    showCreateSuccess() {
-      // Scroll to preview section
-      document.querySelector('.col-span-12.lg:col-span-5').scrollIntoView({ 
-        behavior: 'smooth', 
-        block: 'start' 
-      });
-    }
-    
-    setupPreviewUpdates() {
-      // Update preview on any input change
-      [eventTitle, startDate, startTime, endDate, endTime, timezone, locationInp, organizer, organizerEmail]
-        .forEach(input => {
-          if (input) {
-            input.addEventListener('input', updatePreview);
-          }
-        });
-      
-      // Special handling for description editor
-      const editor = document.getElementById('smartEditor');
-      if (editor) {
-        editor.addEventListener('input', () => {
-          desc.value = editor.innerText;
-          updatePreview();
-        });
-      }
+    if (success) {
+      this.showCopySuccess();
     }
   }
-
-  /* === Global Preview Update Function === */
-  function updatePreview() {
-    if (preview) {
-      preview.updatePreview();
-    }
-  }
-
-  /* === Auto-fill Demo Data === */
-  function autoFillDemoData() {
-    // Set some default values for demo purposes
-    eventTitle.value = 'Product launch webinar';
-    startDate.value = '2025-05-10';
-    startTime.value = '09:00';
-    endDate.value = '2025-05-10';
-    endTime.value = '10:00';
-    timezone.value = 'Asia/Istanbul';
-    locationInp.value = '123 Demo Street, Springfield';
-    organizer.value = 'John Doe';
-    organizerEmail.value = 'john@example.com';
+  
+  /**
+   * Show copy success toast
+   */
+  showCopySuccess() {
+    const toast = this.app.elements.copySuccess;
+    if (!toast) return;
     
-    // Set a sample description
-    const editor = document.getElementById('smartEditor');
-    if (editor) {
-      editor.innerHTML = 'Join us for an exciting product launch webinar where we\'ll showcase our latest innovations.';
+    // Show toast
+    toast.classList.add('show');
+    
+    // Hide after 2 seconds
+    setTimeout(() => {
+      toast.classList.remove('show');
+    }, 2000);
+  }
+}
+
+/**
+ * Manages the smart editor functionality
+ */
+class EditorManager {
+  constructor(app) {
+    this.app = app;
+  }
+  
+  init() {
+    // Initialize smart editor
+    this.setupEditor();
+  }
+  
+  /**
+   * Set up the smart editor
+   */
+  setupEditor() {
+    const editor = this.app.elements.smartEditor;
+    const toolbar = this.app.elements.smartToolbar;
+    const hiddenInput = this.app.elements.description;
+    
+    if (!editor || !toolbar) return;
+    
+    // Update hidden input when editor content changes
+    editor.addEventListener('input', () => {
+      if (hiddenInput) {
+        hiddenInput.value = editor.innerHTML;
+      }
+      this.app.updatePreview();
+    });
+    
+    // Handle toolbar button clicks
+    const buttons = toolbar.querySelectorAll('button');
+    buttons.forEach(button => {
+      button.addEventListener('click', (e) => {
+        e.preventDefault();
+        const format = button.dataset.format;
+        if (format) {
+          this.applyFormat(format);
+        }
+      });
+    });
+    
+    // Handle keyboard shortcuts
+    editor.addEventListener('keydown', (e) => {
+      if (e.ctrlKey || e.metaKey) {
+        switch (e.key.toLowerCase()) {
+          case 'b':
+            e.preventDefault();
+            this.applyFormat('bold');
+            break;
+          case 'i':
+            e.preventDefault();
+            this.applyFormat('italic');
+            break;
+          case 'u':
+            e.preventDefault();
+            this.applyFormat('underline');
+            break;
+        }
+      }
+    });
+  }
+  
+  /**
+   * Apply formatting to selected text
+   */
+  applyFormat(format) {
+    const editor = this.app.elements.smartEditor;
+    if (!editor) return;
+    
+    // Focus the editor
+    editor.focus();
+    
+    // Apply formatting based on type
+    switch (format) {
+      case 'bold':
+        document.execCommand('bold', false, null);
+        break;
+      case 'italic':
+        document.execCommand('italic', false, null);
+        break;
+      case 'underline':
+        document.execCommand('underline', false, null);
+        break;
+      case 'bulletList':
+        document.execCommand('insertUnorderedList', false, null);
+        break;
+      case 'link':
+        const url = prompt('Enter URL:', 'https://');
+        if (url) {
+          document.execCommand('createLink', false, url);
+        }
+        break;
+    }
+    
+    // Update hidden input
+    if (this.app.elements.description) {
+      this.app.elements.description.value = editor.innerHTML;
     }
     
     // Update preview
-    updatePreview();
+    this.app.updatePreview();
   }
+}
 
-  /* === Initialize Everything === */
-  const smartEditor = new SmartDescriptionEditor();
-  const preview = new EnhancedPreview();
-  const copyManager = new CopyManager();
-  const shareManager = new ShareManager();
-  const formManager = new FormManager();
+/**
+ * Manages UI interactions
+ */
+class UIManager {
+  constructor(app) {
+    this.app = app;
+  }
   
-  // Auto-fill demo data for initial state
-  autoFillDemoData();
-});
+  init() {
+    // Initialize UI state
+  }
+  
+  /**
+   * Set output format (button or links)
+   */
+  setOutputFormat(format) {
+    this.app.state.outputFormat = format;
+    
+    // Update UI
+    if (format === 'button') {
+      this.app.elements.buttonFormat.classList.add('bg-primary', 'text-white');
+      this.app.elements.buttonFormat.classList.remove('bg-gray-100', 'text-gray-700');
+      this.app.elements.linksFormat.classList.add('bg-gray-100', 'text-gray-700');
+      this.app.elements.linksFormat.classList.remove('bg-primary', 'text-white');
+      
+      this.app.elements.buttonPreview.classList.remove('hidden');
+      this.app.elements.linksPreview.classList.add('hidden');
+      this.app.elements.buttonCustomization.classList.remove('hidden');
+    } else {
+      this.app.elements.linksFormat.classList.add('bg-primary', 'text-white');
+      this.app.elements.linksFormat.classList.remove('bg-gray-100', 'text-gray-700');
+      this.app.elements.buttonFormat.classList.add('bg-gray-100', 'text-gray-700');
+      this.app.elements.buttonFormat.classList.remove('bg-primary', 'text-white');
+      
+      this.app.elements.linksPreview.classList.remove('hidden');
+      this.app.elements.buttonPreview.classList.add('hidden');
+      this.app.elements.buttonCustomization.classList.add('hidden');
+    }
+    
+    // Update code
+    this.app.codeGenerator.updateCode();
+  }
+  
+  /**
+   * Set button style (dark or light)
+   */
+  setButtonStyle(style) {
+    this.app.state.buttonStyle = style;
+    
+    // Update UI
+    if (style === 'dark') {
+      this.app.elements.style1.classList.add('bg-neutralDark', 'text-white');
+      this.app.elements.style1.classList.remove('bg-gray-200', 'text-gray-700');
+      this.app.elements.style2.classList.add('bg-gray-200', 'text-gray-700');
+      this.app.elements.style2.classList.remove('bg-neutralDark', 'text-white');
+    } else {
+      this.app.elements.style2.classList.add('bg-neutralDark', 'text-white');
+      this.app.elements.style2.classList.remove('bg-gray-200', 'text-gray-700');
+      this.app.elements.style1.classList.add('bg-gray-200', 'text-gray-700');
+      this.app.elements.style1.classList.remove('bg-neutralDark', 'text-white');
+    }
+    
+    // Update preview and code
+    this.app.updatePreview();
+  }
+  
+  /**
+   * Set button color
+   */
+  setButtonColor(color) {
+    this.app.state.buttonColor = color;
+    
+    // Update preview and code
+    this.app.updatePreview();
+    
+    // Hide color picker
+    this.toggleColorPicker(false);
+  }
+  
+  /**
+   * Toggle color picker panel
+   */
+  toggleColorPicker(show) {
+    if (this.app.elements.colorPickerPanel) {
+      if (show === undefined) {
+        this.app.elements.colorPickerPanel.classList.toggle('hidden');
+      } else if (show) {
+        this.app.elements.colorPickerPanel.classList.remove('hidden');
+      } else {
+        this.app.elements.colorPickerPanel.classList.add('hidden');
+      }
+    }
+  }
+  
+  /**
+   * Show custom color picker
+   */
+  showCustomColorPicker() {
+    // Create a color input
+    const input = document.createElement('input');
+    input.type = 'color';
+    input.value = this.app.state.buttonColor;
+    
+    // Handle color selection
+    input.addEventListener('input', (e) => {
+      this.setButtonColor(e.target.value);
+    });
+    
+    // Trigger click to open color picker
+    input.click();
+  }
+  
+  /**
+   * Toggle share dropdown
+   */
+  toggleShareDropdown(show) {
+    if (this.app.elements.shareDropdown) {
+      if (show === undefined) {
+        this.app.elements.shareDropdown.classList.toggle('hidden');
+        this.app.elements.shareDropdown.classList.toggle('block');
+      } else if (show) {
+        this.app.elements.shareDropdown.classList.remove('hidden');
+        this.app.elements.shareDropdown.classList.add('block');
+      } else {
+        this.app.elements.shareDropdown.classList.add('hidden');
+        this.app.elements.shareDropdown.classList.remove('block');
+      }
+    }
+  }
+  
+  /**
+   * Toggle timezone section
+   */
+  toggleTimezoneSection() {
+    if (this.app.elements.timezoneSection) {
+      this.app.elements.timezoneSection.classList.toggle('hidden');
+      this.app.state.showTimezone = !this.app.elements.timezoneSection.classList.contains('hidden');
+      
+      // Update button text
+      if (this.app.elements.showTimezone) {
+        this.app.elements.showTimezone.textContent = this.app.state.showTimezone ? 
+          'Hide timezone options' : 'Show timezone options';
+      }
+    }
+  }
+}
