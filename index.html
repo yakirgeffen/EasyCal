@@ -42,7 +42,20 @@
     };
   </script>
 
-  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Tailwind CSS -->
+  <link href="./dist/output.css" rel="stylesheet">
+  <!-- Fallback to CDN if local file is not available -->
+  <script>
+    // Check if the local CSS file is loaded
+    const linkElement = document.querySelector('link[href="./dist/output.css"]');
+    linkElement.addEventListener('error', function() {
+      // If local file fails to load, use CDN as fallback
+      const cdnScript = document.createElement('script');
+      cdnScript.src = "https://cdn.tailwindcss.com";
+      document.head.appendChild(cdnScript);
+      console.log('Using Tailwind CSS CDN as fallback');
+    });
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet">
