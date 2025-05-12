@@ -2,11 +2,6 @@
 
 EasyCal is a comprehensive event management application that allows users to create, manage, and share events. The application consists of a frontend UI built with HTML, CSS, and JavaScript, and a backend API built with Node.js, Express, and MongoDB.
 
-## Project Structure
-
-- `easycal-ui-rebuild/` - Frontend application
-- `easycal-backend/` - Backend API
-
 ## Features
 
 - User authentication with multiple providers:
@@ -16,11 +11,34 @@ EasyCal is a comprehensive event management application that allows users to cre
   - Microsoft OAuth
 - Event creation and management
 - User dashboard with event history
+- Generate embeddable "Add to Calendar" buttons or links
+- Support for multiple calendar platforms (Google, Apple, Outlook, Yahoo, etc.)
+- Smart description editor with formatting options
+- Live preview of the event and generated code
+- Button customization options
+- Copy to clipboard functionality
 - Responsive design for all devices
 
-## Local Development
+## Project Structure
 
-### Backend
+- `easycal-ui-rebuild/` - Frontend application
+  - `index.html` - Main HTML file
+  - `style.css` - Custom CSS styles
+  - `script.js` - JavaScript functionality
+  - `src/input.css` - Tailwind CSS input file
+  - `dist/output.css` - Compiled Tailwind CSS output
+  - `tailwind.config.js` - Tailwind CSS configuration
+- `easycal-backend/` - Backend API
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js (v14 or higher)
+- npm (v6 or higher)
+- MongoDB (for backend functionality)
+
+### Backend Setup
 
 1. Navigate to the backend directory:
    ```
@@ -53,7 +71,7 @@ EasyCal is a comprehensive event management application that allows users to cre
    npm run dev
    ```
 
-### Frontend
+### Frontend Setup
 
 1. Navigate to the frontend directory:
    ```
@@ -140,6 +158,22 @@ To enable OAuth authentication, you need to configure the following:
    - For local development: `http://localhost:5000/api/auth/microsoft/callback`
    - For production: `https://easycal-backend.vercel.app/api/auth/microsoft/callback`
 
+## Technologies Used
+
+- HTML5
+- CSS3
+- JavaScript (vanilla)
+- Tailwind CSS
+- Node.js
+- Express
+- MongoDB
+- OAuth 2.0
+
 ## License
 
 This project is licensed under the MIT License.
+
+## Acknowledgments
+
+- Nunito font from Google Fonts
+- Icons from Heroicons

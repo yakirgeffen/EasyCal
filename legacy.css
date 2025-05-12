@@ -1,0 +1,50 @@
+/* snippet box */
+.snippet-code{
+  background:#F7F7F7;
+  border:1px solid #E0E0E0;
+  border-radius:8px;
+  padding:16px;
+  font:13px/1.45 "SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;
+  color:#241C15;
+  overflow:auto;
+  max-height:180px;
+}
+
+/* copy buttons inherit Tailwind styles but need equal height */
+.primary-btn,.secondary-btn{
+  flex:1 1 50%;
+  padding:12px 16px;
+  border-radius:40px;
+}
+.secondary-btn{
+  border:1px solid #DADADA;
+  background:#fff;
+  color:#241C15;
+}
+.secondary-btn:hover{background:#F3F3F3}
+
+/* toast */
+#copySuccess.show{
+  opacity:1;transform:translate(-50%,0);
+}
+#copySuccess{
+  position:fixed;
+  top:0;left:50%;
+  transform:translate(-50%,0);
+  opacity:0;
+  transition:opacity .3s ease-in-out,transform .3s ease-in-out;
+  background:#fff;
+  padding:16px;
+  border-radius:8px;
+  box-shadow:0 2px 4px rgba(0,0,0,.1);
+}
+#copySuccess p{
+  margin:0;
+  font-size:14px;
+  color:#241C15;
+}
+/* hide toast after 2 seconds */  
+#copySuccess.hide{
+  opacity:0;
+  transform:translate(-50%,0);
+}
